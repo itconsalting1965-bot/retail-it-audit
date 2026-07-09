@@ -675,10 +675,8 @@ var TARIFF = {
     HD_1: { rate: 830, unit:'руб. за одно обращение', volume: function (v) { return v.HD_1_01; } },
     HD_2: { rate: 830, unit:'руб. за заявку на доступ', volume: function (v) { return v.HD_2_01; } },
     HD_4: { rate: 4000, unit:'руб. за занятие', volume: function (v) { return v.HD_4_02 / 12; } },
-    C1_1: { rate: 3500, unit:'руб. за базу в месяц', volume: function (v) { return v.C1_1_02; } },
-    C1_2: { rate: 6000, unit:'руб. за обновление', volume: function (v) { return v.C1_2_05 / 12; } },
-    C1_3: { rate: 1200, unit:'руб. за пользователя в месяц', volume: function (v) { return v.C1_3_01; } },
-    C1_4: { rate: 2500, unit:'руб. за один обмен в месяц', volume: function (v) { return v.C1_4_05; } },
+    C1_3: { rate: 3462, unit:'руб. за обращение (в среднем 1,5 в месяц)', volume: function () { return 1.5; } },
+    C1_4: { rate: 3462, unit:'руб. за случай поломки обмена', volume: function (v) { return v.C1_4_03; } },
     KKT_1: { rate: 830, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
     KKT_2: { rate: 830, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
     KKT_3: { rate: 830, unit:'руб. за терминал в месяц', volume: function (v) { return v.KKT_3_05; } },
@@ -700,7 +698,7 @@ var PRODUCTS = {
 };
 var SVC_PRODUCTS = {
     HD: ['HD_1', 'HD_2', 'HD_4'],
-    C1: ['C1_1', 'C1_2', 'C1_3', 'C1_4'],
+    C1: ['C1_3', 'C1_4'],
     KKT: ['KKT_1', 'KKT_2', 'KKT_3', 'KKT_4', 'KKT_5', 'KKT_6'],
     MARK: ['MARK_2', 'MARK_3', 'MARK_4'],
     INFRA: ['INFRA_3']
@@ -1051,7 +1049,7 @@ function tierExplain(tier) {
 // ---------- Тарифы (только просмотр) ----------
 function renderTariffsStep() {
     var rows = [];
-    var order = ['HD_1','HD_2','HD_4','C1_1','C1_2','C1_3','C1_4','KKT_1','KKT_2','KKT_3','KKT_4','KKT_5','KKT_6','MARK_2','MARK_3','MARK_4','INFRA_3'];
+    var order = ['HD_1','HD_2','HD_4','C1_3','C1_4','KKT_1','KKT_2','KKT_3','KKT_4','KKT_5','KKT_6','MARK_2','MARK_3','MARK_4','INFRA_3'];
     var titleOf = {};
     BLOCKS.forEach(function (b) { titleOf[b.id] = b.title; });
     order.forEach(function (id) {
