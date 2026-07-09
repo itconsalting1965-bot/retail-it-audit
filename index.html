@@ -674,26 +674,21 @@ var TCO = {
 var TARIFF = {
     HD_1: { rate: 830, unit:'руб. за одно обращение', volume: function (v) { return v.HD_1_01; } },
     HD_2: { rate: 830, unit:'руб. за заявку на доступ', volume: function (v) { return v.HD_2_01; } },
-    HD_3: { rate: 1500, unit:'руб. за магазин в месяц', volume: function (v, cli) { return cli.points; } },
     HD_4: { rate: 4000, unit:'руб. за занятие', volume: function (v) { return v.HD_4_02 / 12; } },
     C1_1: { rate: 3500, unit:'руб. за базу в месяц', volume: function (v) { return v.C1_1_02; } },
     C1_2: { rate: 6000, unit:'руб. за обновление', volume: function (v) { return v.C1_2_05 / 12; } },
     C1_3: { rate: 1200, unit:'руб. за пользователя в месяц', volume: function (v) { return v.C1_3_01; } },
     C1_4: { rate: 2500, unit:'руб. за один обмен в месяц', volume: function (v) { return v.C1_4_05; } },
-    KKT_1: { rate: 500, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
-    KKT_2: { rate: 300, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
-    KKT_3: { rate: 400, unit:'руб. за терминал в месяц', volume: function (v) { return v.KKT_3_05; } },
-    KKT_4: { rate: 350, unit:'руб. за единицу в месяц', volume: function (v) { return v.KKT_4_01; } },
+    KKT_1: { rate: 830, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
+    KKT_2: { rate: 830, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
+    KKT_3: { rate: 830, unit:'руб. за терминал в месяц', volume: function (v) { return v.KKT_3_05; } },
+    KKT_4: { rate: 830, unit:'руб. за единицу в месяц', volume: function (v) { return v.KKT_4_01; } },
     KKT_5: { rate: 1000, unit:'руб. за выезд', volume: function (v) { return v.KKT_5_04 / 12; } },
-    KKT_6: { rate: 1500, unit:'руб. за регистрацию', volume: function (v) { return v.KKT_6_01 / 12; } },
+    KKT_6: { rate: 830, unit:'руб. за регистрацию', volume: function (v) { return v.KKT_6_01 / 12; } },
     MARK_2: { rate: 10, unit:'руб. за документ', volume: function (v) { return v.MARK_2_03; } },
     MARK_3: { rate: 830, unit:'руб. за случай', volume: function (v) { return v.MARK_3_01; } },
     MARK_4: { rate: 830, unit:'руб. за консультацию', volume: function (v) { return v.MARK_4_01; } },
-    INFRA_1: { rate: 1000, unit:'руб. за единицу в месяц', volume: function (v) { return v.INFRA_1_01; } },
-    INFRA_2: { rate: 2000, unit:'руб. за магазин в месяц', volume: function (v, cli) { return cli.points; } },
-    INFRA_3: { rate: 3408, unit:'руб. за сервер в месяц', volume: function (v) { return v.INFRA_3_01; } },
-    INFRA_4: { rate: 300, unit:'руб. за рабочее место в месяц', volume: function (v) { return v.INFRA_1_01; } },
-    INFRA_6: { rate: 800, unit:'руб. за объект в месяц', volume: function (v) { return v.INFRA_3_01; } }
+    INFRA_3: { rate: 3408, unit:'руб. за сервер в месяц', volume: function (v) { return v.INFRA_3_01; } }
 };
 
 var PRODUCTS = {
@@ -704,11 +699,11 @@ var PRODUCTS = {
     INFRA: ['INFRA_1', 'INFRA_2', 'INFRA_3', 'INFRA_4', 'INFRA_5', 'INFRA_6']
 };
 var SVC_PRODUCTS = {
-    HD: ['HD_1', 'HD_2', 'HD_3', 'HD_4'],
+    HD: ['HD_1', 'HD_2', 'HD_4'],
     C1: ['C1_1', 'C1_2', 'C1_3', 'C1_4'],
     KKT: ['KKT_1', 'KKT_2', 'KKT_3', 'KKT_4', 'KKT_5', 'KKT_6'],
     MARK: ['MARK_2', 'MARK_3', 'MARK_4'],
-    INFRA: ['INFRA_1', 'INFRA_2', 'INFRA_3', 'INFRA_4', 'INFRA_6']
+    INFRA: ['INFRA_3']
 };
 
 function num(x) { x = parseFloat(x); return isFinite(x) ? x : 0; }
@@ -1056,7 +1051,7 @@ function tierExplain(tier) {
 // ---------- Тарифы (только просмотр) ----------
 function renderTariffsStep() {
     var rows = [];
-    var order = ['HD_1','HD_2','HD_3','HD_4','C1_1','C1_2','C1_3','C1_4','KKT_1','KKT_2','KKT_3','KKT_4','KKT_5','KKT_6','MARK_2','MARK_3','MARK_4','INFRA_1','INFRA_2','INFRA_3','INFRA_4','INFRA_6'];
+    var order = ['HD_1','HD_2','HD_4','C1_1','C1_2','C1_3','C1_4','KKT_1','KKT_2','KKT_3','KKT_4','KKT_5','KKT_6','MARK_2','MARK_3','MARK_4','INFRA_3'];
     var titleOf = {};
     BLOCKS.forEach(function (b) { titleOf[b.id] = b.title; });
     order.forEach(function (id) {
