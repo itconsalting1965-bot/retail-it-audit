@@ -216,6 +216,18 @@ select.field-input { max-width: 320px; }
 .warn-list { margin: 6px 0 12px; padding-left: 20px; font-size: 13px; color: var(--ink-secondary); }
 .warn-hint { font-size: 13px; color: var(--ink-secondary); }
 
+.margin-panel {
+  background: var(--page); border: 1px dashed var(--ink-muted); border-radius: var(--radius);
+  padding: 16px 18px; margin: 20px 0;
+}
+.margin-panel-title {
+  font-weight: 700; font-size: 12.5px; letter-spacing: 0.02em; text-transform: uppercase;
+  color: var(--ink-muted); margin-bottom: 8px;
+}
+.margin-slider-row { display: flex; align-items: center; gap: 14px; margin: 10px 0 4px; }
+.margin-slider-row input[type="range"] { flex: 1; accent-color: var(--brand); }
+.margin-slider-row span { font-size: 13px; font-weight: 600; color: var(--ink-secondary); white-space: nowrap; }
+
 /* ---- buttons / nav ---- */
 .btn {
   border: none; background: var(--brand); color: #fff; font-weight: 600;
@@ -675,8 +687,8 @@ var TARIFF = {
     HD_1: { rate: 830, unit:'руб. за одно обращение', volume: function (v) { return v.HD_1_01; } },
     HD_2: { rate: 830, unit:'руб. за заявку на доступ', volume: function (v) { return v.HD_2_01; } },
     HD_4: { rate: 4000, unit:'руб. за занятие', volume: function (v) { return v.HD_4_02 / 12; } },
-    C1_3: { rate: 3462, unit:'руб. за обращение (в среднем 1,5 в месяц)', volume: function () { return 1.5; } },
-    C1_4: { rate: 3462, unit:'руб. за случай поломки обмена', volume: function (v) { return v.C1_4_03; } },
+    C1_3: { rate: 7000, unit:'руб. за обращение (в среднем 1,5 в месяц)', volume: function () { return 1.5; } },
+    C1_4: { rate: 7000, unit:'руб. за случай поломки обмена', volume: function (v) { return v.C1_4_03; } },
     KKT_1: { rate: 830, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
     KKT_2: { rate: 830, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
     KKT_3: { rate: 830, unit:'руб. за терминал в месяц', volume: function (v) { return v.KKT_3_05; } },
@@ -686,7 +698,30 @@ var TARIFF = {
     MARK_2: { rate: 10, unit:'руб. за документ', volume: function (v) { return v.MARK_2_03; } },
     MARK_3: { rate: 830, unit:'руб. за случай', volume: function (v) { return v.MARK_3_01; } },
     MARK_4: { rate: 830, unit:'руб. за консультацию', volume: function (v) { return v.MARK_4_01; } },
-    INFRA_3: { rate: 3408, unit:'руб. за сервер в месяц', volume: function (v) { return v.INFRA_3_01; } }
+    INFRA_3: { rate: 7000, unit:'руб. за сервер в месяц', volume: function (v) { return v.INFRA_3_01; } }
+};
+
+/* Себестоимость (без наценки) для тех же позиций — оклад+взносы+накладные, без целевой маржи.
+   Нужна для служебной панели «маржа» в отчёте: от 0% (себестоимость) до текущей цены (уже заложенная маржа).
+   Не для всех позиций есть надёжная себестоимость (HD-4, KKT-5, MARK-2 остаются рыночной догадкой без пересчёта) —
+   такие позиции в панель маржи не включаются, их цена не меняется. */
+var COST_HD_TICKET = 591;   // 1082 руб/час (1-я линия, без наценки) × 33 мин
+var COST_C1_2H = 2472;      // 1236 руб/час (1С/Маркировка, без наценки) × 2 часа
+var COST_ADMIN_2H = 2434;   // 1217 руб/час (админ, без наценки) × 2 часа
+
+var COST = {
+    HD_1: function (v) { return v.HD_1_01 * COST_HD_TICKET; },
+    HD_2: function (v) { return v.HD_2_01 * COST_HD_TICKET; },
+    KKT_1: function (v) { return v.KKT_1_01 * COST_HD_TICKET; },
+    KKT_2: function (v) { return v.KKT_1_01 * COST_HD_TICKET; },
+    KKT_3: function (v) { return v.KKT_3_05 * COST_HD_TICKET; },
+    KKT_4: function (v) { return v.KKT_4_01 * COST_HD_TICKET; },
+    KKT_6: function (v) { return (v.KKT_6_01 / 12) * COST_HD_TICKET; },
+    MARK_3: function (v) { return v.MARK_3_01 * COST_HD_TICKET; },
+    MARK_4: function (v) { return v.MARK_4_01 * COST_HD_TICKET; },
+    INFRA_3: function (v) { return v.INFRA_3_01 * COST_ADMIN_2H; },
+    C1_3: function () { return 1.5 * COST_C1_2H; },
+    C1_4: function (v) { return v.C1_4_03 * COST_C1_2H; }
 };
 
 var PRODUCTS = {
@@ -761,7 +796,26 @@ function computeAll(rawValues, rawCli) {
         result.savingsByProduct[product] = result.tcoTotal[product] - (result.svcTotal[product] || 0);
     }
     result.tier = computeTier(cli.points, rawCli.CLI_0_15);
+
+    // Служебный расчёт для панели «маржа» — только по позициям, где известна себестоимость.
+    var costTotal = 0, priceOfCostKnownTotal = 0, id3;
+    for (id3 in COST) {
+        costTotal += COST[id3](v, cli);
+        priceOfCostKnownTotal += result.svc[id3] || 0;
+    }
+    result.marginCostTotal = costTotal;
+    result.marginPriceTotal = priceOfCostKnownTotal;
+    result.marginFixedTotal = result.grandSvc - priceOfCostKnownTotal;
+    result.marginPct = costTotal > 0 ? (priceOfCostKnownTotal / costTotal - 1) * 100 : 0;
+
     return result;
+}
+
+// levelPct: 0 = себестоимость (без наценки), 100 = текущая цена (заложенная наценка). Можно и выше 100.
+function svcAtMarginLevel(result, levelPct) {
+    var k = levelPct / 100;
+    var scaledPart = result.marginCostTotal + (result.marginPriceTotal - result.marginCostTotal) * k;
+    return result.marginFixedTotal + scaledPart;
 }
 /* ============================================================
    Retail IT Audit — интерфейс: состояние, отрисовка, диаграммы, экспорт.
@@ -1114,6 +1168,24 @@ function renderResultsStep(r) {
         statTile('Служба поддержки, по зарплатам', fmtMoney(r.bottomHD), 'в месяц', null) +
         statTile('Сопровождение 1С, по зарплатам', fmtMoney(r.bottomC1), 'в месяц', null) +
         '</div></div>';
+
+    if (r.marginCostTotal > 0) {
+        html += '<div class="margin-panel no-print">' +
+            '<div class="margin-panel-title">Служебное — только для нас, клиенту не показывать</div>' +
+            '<p class="muted small">Ниже — часть нашей цены, где известна себестоимость (обращения, кассы, обмены, администрирование сервера). ' +
+            'Ползунок показывает диапазон от нуля (работаем в ноль, только себестоимость) до текущей заложенной наценки. ' +
+            'Если экономия клиента при текущей наценке выглядит слабо — подвиньте ползунок влево и посмотрите, при какой наценке предложение станет убедительным.</p>' +
+            '<div class="margin-slider-row">' +
+            '<input type="range" id="marginSlider" min="0" max="100" step="5" value="100" oninput="onMarginSliderChange(this.value)">' +
+            '<span id="marginSliderLabel">Наценка: ' + Math.round(r.marginPct) + '% (текущая)</span>' +
+            '</div>' +
+            '<div class="tiles">' +
+            statTile('Цена при этой наценке', '<span id="marginPreviewSvc">' + fmtMoney(r.grandSvc) + '</span>', 'в месяц', 'accent') +
+            statTile('Экономия клиента при этой наценке', '<span id="marginPreviewSavings">' + fmtMoney(r.savingsTotal) + '</span>', 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad') +
+            statTile('Насколько выгодно клиенту', '<span id="marginPreviewRoi">' + fmtPercent(r.roi) + '</span>', '', r.roi >= 0 ? 'good' : 'bad') +
+            '</div>' +
+            '</div>';
+    }
 
     html += '<h3 class="section-title">Отчёт для клиента</h3>';
     html += '<p class="lead">Ниже — заготовка отчёта под каждого получателя. При показе клиенту оставьте только тот раздел, который относится к тому, кто будет читать отчёт (это указано в профиле клиента).</p>';
@@ -1503,6 +1575,7 @@ function render() {
         body = renderTariffsStep();
     } else if (step === 'results') {
         var r = computeAll(STATE.values, STATE.values);
+        STATE.lastResult = r;
         body = renderResultsStep(r);
     }
 
@@ -1533,6 +1606,23 @@ function render() {
 function toggleHelp(open) {
     STATE.helpOpen = open === undefined ? !STATE.helpOpen : open;
     document.getElementById('helpOverlay').classList.toggle('open', STATE.helpOpen);
+}
+
+// Служебный ползунок «маржа» на итоговом экране — пересчитывает цену/экономию в диапазоне
+// от себестоимости (0%) до текущей заложенной наценки (100%), не трогая сохранённые данные аудита.
+function onMarginSliderChange(levelPct) {
+    var r = STATE.lastResult;
+    if (!r) return;
+    var adjustedSvc = svcAtMarginLevel(r, levelPct);
+    var adjustedSavings = r.grandTco - adjustedSvc;
+    var adjustedRoi = adjustedSvc > 0 ? adjustedSavings / adjustedSvc : 0;
+    document.getElementById('marginPreviewSvc').textContent = fmtMoney(adjustedSvc);
+    document.getElementById('marginPreviewSavings').textContent = fmtMoney(adjustedSavings);
+    document.getElementById('marginPreviewRoi').textContent = fmtPercent(adjustedRoi);
+    var label = levelPct == 100 ? 'Наценка: ' + Math.round(r.marginPct) + '% (текущая)' :
+        levelPct == 0 ? 'Наценка: 0% (в ноль, только себестоимость)' :
+        'Наценка: ' + Math.round(r.marginPct * levelPct / 100) + '%';
+    document.getElementById('marginSliderLabel').textContent = label;
 }
 
 // ---------- Обработка ввода (делегирование событий) ----------
