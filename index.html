@@ -282,7 +282,41 @@ select.field-input { max-width: 320px; }
 .pain-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--radius); padding: 14px 16px; }
 .pain-title { font-weight: 700; margin-bottom: 6px; }
 .pain-text { font-size: 13px; color: var(--ink-secondary); }
+.pain-text p { margin: 0 0 8px; }
+.pain-text p:last-child { margin-bottom: 0; }
 .price-summary { background: var(--brand-tint); border-radius: var(--radius); padding: 14px 16px; margin-top: 20px; font-size: 14px; }
+
+/* ---- модалка выбора получателя отчёта ---- */
+#printChooserOverlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; z-index: 10;
+  align-items: flex-start; justify-content: center; padding: 40px 16px;
+}
+#printChooserOverlay.open { display: flex; }
+.print-chooser-options { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.print-chooser-btn {
+  text-align: left; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink); font-weight: 600; cursor: pointer; font-size: 14px;
+}
+.print-chooser-btn:hover { border-color: var(--brand); background: var(--brand-tint); }
+
+/* ---- печатный отчёт для клиента ---- */
+.print-report { max-width: 720px; margin: 0 auto; padding: 8px 0; }
+.print-report-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-bottom: 28px; padding-bottom: 16px; border-bottom: 2px solid var(--brand);
+}
+.print-report-header svg { height: 26px; width: auto; color: var(--ink); flex: none; }
+.print-report-meta { text-align: right; font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+.print-report h1 { font-size: 26px; margin: 0 0 20px; letter-spacing: -0.01em; text-wrap: balance; }
+.print-section-title { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--brand); font-weight: 700; margin: 26px 0 10px; }
+.print-report p { font-size: 15px; line-height: 1.7; color: var(--ink); margin: 0 0 14px; max-width: 68ch; }
+.print-stat-row { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.print-stat { flex: 1; min-width: 150px; background: var(--page); border-radius: var(--radius); padding: 14px 16px; }
+.print-stat-value { font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.print-stat-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+@media print {
+  .print-stat { background: #F2F2F2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 
 /* ---- save indicator / help ---- */
 #saveIndicator {
@@ -335,6 +369,13 @@ select.field-input { max-width: 320px; }
   <div class="help-panel">
     <button class="help-close" onclick="toggleHelp(false)" aria-label="Закрыть">✕</button>
     <div id="helpBody"></div>
+  </div>
+</div>
+
+<div id="printChooserOverlay" onclick="if(event.target===this) closePrintChooser()">
+  <div class="help-panel">
+    <button class="help-close" onclick="closePrintChooser()" aria-label="Закрыть">✕</button>
+    <div id="printChooserBody"></div>
   </div>
 </div>
 <script>
@@ -1122,12 +1163,96 @@ function renderTariffsStep() {
 }
 
 // ---------- Результаты ----------
-var AUDIENCE_PAIN = [
-    { key:'owner', title:'Собственнику', text:'Деньги на ИТ уходили непонятно куда, о проблемах узнавали последними. Главное: сколько реально сэкономим за год, во сколько раз окупятся траты, и что мы берём под контроль riски (штрафы, простои), которые раньше были невидимы.' },
-    { key:'ops', title:'Операционному директору', text:'Магазины простаивали, а директора магазинов тратили время на решение компьютерных проблем вместо продаж. Главное: сколько часов простоя было и сколько будет, и что нагрузка с персонала точек снимается.' },
-    { key:'fin', title:'Финансовому директору', text:'Расходы на ИТ размазаны по разным статьям и непредсказуемы. Главное: понятная структура "было / станет" по каждой статье и фиксированная предсказуемая цена вместо случайных счетов.' },
-    { key:'it', title:'ИТ-директору клиента', text:'Внимание: не подавайте это как "экономию на зарплатах" — для ИТ-директора это разговор про то, что рутина (заявки пользователей, обслуживание касс) уходит с его команды, и она может заняться более сложными задачами, а не про сокращение его отдела.' }
-];
+
+// Склонение русских существительных по числу: pluralRu(5,'обращение','обращения','обращений') -> 'обращений'
+function pluralRu(n, one, few, many) {
+    n = Math.abs(Math.round(n || 0));
+    var mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+}
+
+function methodologySummary(r, cliName) {
+    return '<p>Мы изучили, как в сети «' + escapeHtml(cliName) + '» (' + r.cli.points + ' магазин(ов)) устроены пять направлений ИТ: служба поддержки пользователей, сопровождение 1С, кассы и оборудование, маркировка товаров, компьютеры и сеть.</p>' +
+        '<p>По каждому направлению посчитали, сколько сейчас уходит времени и денег на решение задач — официально (зарплаты сотрудников, подрядчики, штрафы) и неофициально (простои, время, отвлечённое от прямых обязанностей). Дальше сравнили это с тем, сколько будет стоить, если эти задачи возьмёт на себя Айти-Консалтинг.</p>';
+}
+
+// Полноценные продажные тексты под каждого получателя отчёта — используются и в превью на экране,
+// и в итоговом печатном документе. Числа подставляются из реального расчёта конкретного аудита.
+var PRINT_PERSONAS = {
+    owner: {
+        title: 'Собственнику',
+        reportTitle: 'Итоги аудита ИТ — для собственника',
+        narrative: function (r, cliName) {
+            return '<p>Сегодня ИТ в сети «' + escapeHtml(cliName) + '» — во многом чёрный ящик: деньги уходят по разным статьям, о серьёзных проблемах вы узнаёте последними, а риски — просроченные фискальные накопители, непроверенные резервные копии, штрафы за маркировку — заранее никто не считал и не показывал.</p>' +
+                '<p>Мы прошли по всем пяти направлениям — от службы поддержки до серверов — и превратили этот чёрный ящик в понятную цифру. Сеть сейчас тратит на ИТ примерно <b>' + fmtMoney(r.grandTco) + ' в месяц</b> — посчитано снизу вверх, по фактическим зарплатам, подрядчикам, штрафам и потерянному времени, а не на глаз.</p>' +
+                '<p>Наше предложение — <b>' + fmtMoney(r.grandSvc) + ' в месяц</b> за тот же объём задач, но с одной точкой ответственности, фиксированной ценой и понятной зоной покрытия вместо разрозненных людей и случайных счетов.</p>' +
+                '<p>Разница — <b>' + fmtMoney(r.savingsTotal) + ' в месяц</b>, это <b>' + fmtMoney(r.savingsTotal * 12) + ' в год</b>. Но дело не только в деньгах: вы получаете контроль над тем, что раньше было невидимым, и снимаете риски, каждый из которых мог бы обойтись дороже, чем вся экономия за месяц.</p>';
+        }
+    },
+    ops: {
+        title: 'Операционному директору',
+        reportTitle: 'Итоги аудита ИТ — для операционного директора',
+        narrative: function (r, cliName) {
+            var hd = r.v.HD_1_01 || 0, kkt = r.v.KKT_1_01 || 0;
+            return '<p>Каждый раз, когда касса зависает или директор магазина разбирается с компьютером вместо работы с покупателями, — это упущенные продажи, раздражённый персонал и время, которое нигде не считается расходом, но им является.</p>' +
+                '<p>По сети «' + escapeHtml(cliName) + '» это ' + fmtNum(hd) + ' ' + pluralRu(hd, 'обращение', 'обращения', 'обращений') + ' в службу поддержки в месяц и ' + fmtNum(kkt) + ' ' + pluralRu(kkt, 'касса', 'кассы', 'касс') + ' на обслуживании. Сейчас всё это решается силами директоров магазинов и случайных исполнителей — без единых сроков реакции.</p>' +
+                '<p>С нами эта нагрузка уходит с директоров магазинов на выделенную команду с понятными сроками реакции на каждое обращение. Вместо разговоров "кто виноват, когда касса не работает третий час" — один ответственный подрядчик с зафиксированными сроками.</p>' +
+                '<p>Текущая стоимость этой нагрузки — <b>' + fmtMoney(r.grandTco) + ' в месяц</b> (включая время сотрудников, которое сейчас тратится не по назначению). Наша цена — <b>' + fmtMoney(r.grandSvc) + ' в месяц</b>, экономия — <b>' + fmtMoney(r.savingsTotal) + ' в месяц</b> — и это без учёта того, что директора магазинов возвращаются к своей главной работе: продажам.</p>';
+        }
+    },
+    fin: {
+        title: 'Финансовому директору',
+        reportTitle: 'Итоги аудита ИТ — для финансового директора',
+        narrative: function (r, cliName) {
+            return '<p>Расходы на ИТ в сети «' + escapeHtml(cliName) + '» сейчас размазаны по разным статьям — зарплаты своих сотрудников, разовые счета от подрядчиков, покупка оборудования, штрафы — и их сложно спрогнозировать даже на месяц вперёд, не говоря уже про год.</p>' +
+                '<p>Мы собрали всё это в одну проверяемую цифру: <b>' + fmtMoney(r.grandTco) + ' в месяц</b> — то, что сеть реально тратит на ИТ сейчас, по факту, а не по ощущениям. Ниже в отчёте — раскладка по пяти направлениям, из чего эта цифра складывается.</p>' +
+                '<p>Наше предложение — <b>' + fmtMoney(r.grandSvc) + ' в месяц фиксированно</b>, с прозрачной структурой по каждому направлению. Это на <b>' + fmtMoney(r.savingsTotal) + ' в месяц (' + fmtPercent(r.roi) + ')</b> дешевле текущей ситуации. Но для планирования бюджета важнее не сама экономия, а предсказуемость: эта цифра не меняется внезапно из-за поломки сервера, штрафа или незапланированного найма.</p>';
+        }
+    },
+    it: {
+        title: 'ИТ-директору',
+        reportTitle: 'Итоги аудита ИТ — для ИТ-директора',
+        narrative: function (r, cliName) {
+            var hd = r.v.HD_1_01 || 0, kkt = r.v.KKT_1_01 || 0;
+            return '<p>Мы не предлагаем заменить вашу экспертизу или вашу команду — мы предлагаем забрать типовую нагрузку, которая сейчас отнимает время у задач, которые действительно требуют вашей квалификации: методологии, интеграций, развития систем.</p>' +
+                '<p>По сети «' + escapeHtml(cliName) + '» это ' + fmtNum(hd) + ' ' + pluralRu(hd, 'обращение', 'обращения', 'обращений') + ' в службу поддержки и обслуживание ' + fmtNum(kkt) + ' ' + pluralRu(kkt, 'кассы', 'касс', 'касс') + ' в месяц — рутина, которая занимает время, но не требует вашей квалификации.</p>' +
+                '<p>Мы берём эту рутину на себя с зафиксированными сроками реакции, оставляя вам и вашей команде то, что действительно требует разбора: настройки, права доступа, методологию учёта, развитие систем. Это партнёрство, а не сокращение — у вас остаётся полный контроль и видимость происходящего.</p>' +
+                '<p>Текущая стоимость этой рутины для сети — <b>' + fmtMoney(r.grandTco) + ' в месяц</b>, наше предложение — <b>' + fmtMoney(r.grandSvc) + ' в месяц</b>, разница — <b>' + fmtMoney(r.savingsTotal) + ' в месяц</b>, которые высвобождаются на задачи, что двигают бизнес, а не на дежурство по типовым вопросам.</p>';
+        }
+    }
+};
+var PRINT_PERSONA_ORDER = ['owner', 'ops', 'fin', 'it'];
+
+function printStat(label, value) {
+    return '<div class="print-stat"><div class="print-stat-value">' + value + '</div><div class="print-stat-label">' + escapeHtml(label) + '</div></div>';
+}
+
+function renderPrintReport(r, audienceKey) {
+    var cliName = STATE.values.CLI_0_01 || 'клиент';
+    var persona = PRINT_PERSONAS[audienceKey];
+    var html = '<div class="print-report">';
+    html += '<div class="print-report-header">' + LOGO_SVG +
+        '<div class="print-report-meta">Аудит ИТ-эксплуатации розничной сети<br>' + escapeHtml(cliName) + ' · ' + fmtDate(Date.now()) + '</div></div>';
+    html += '<h1>' + persona.reportTitle + '</h1>';
+    html += '<h2 class="print-section-title">Что мы проанализировали</h2>';
+    html += methodologySummary(r, cliName);
+    html += '<h2 class="print-section-title">' + persona.title + '</h2>';
+    html += persona.narrative(r, cliName);
+    html += '<h2 class="print-section-title">Итоговые цифры</h2>';
+    html += '<div class="print-stat-row">' +
+        printStat('Сейчас в месяц', fmtMoney(r.grandTco)) +
+        printStat('С нами в месяц', fmtMoney(r.grandSvc)) +
+        printStat('Экономия в месяц', fmtMoney(r.savingsTotal)) +
+        '</div>' +
+        '<div class="print-stat-row">' +
+        printStat('Экономия в год', fmtMoney(r.savingsTotal * 12)) +
+        printStat('Насколько выгоднее', fmtPercent(r.roi)) +
+        '</div>';
+    html += '</div>';
+    return html;
+}
 
 function renderResultsStep(r) {
     var html = '<div class="step-header" style="--accent:#B41818"><div class="step-eyebrow">Итог</div><h1>Результаты аудита</h1></div>';
@@ -1140,14 +1265,29 @@ function renderResultsStep(r) {
             '</div>';
     }
 
+    html += '<div class="margin-panel no-print">' +
+        '<div class="margin-panel-title">Служебное — только для нас, клиенту не показывать</div>' +
+        (r.marginCostTotal > 0 ?
+            '<p class="muted small">Ниже — часть нашей цены, где известна себестоимость (обращения, кассы, обмены, администрирование сервера). ' +
+            'Ползунок двигает диапазон от нуля (работаем в ноль, только себестоимость) до текущей заложенной наценки — и сразу пересчитывает цифры результата ниже. ' +
+            'Если экономия клиента при текущей наценке выглядит слабо — подвиньте ползунок влево и посмотрите, при какой наценке предложение станет убедительным.</p>' +
+            '<div class="margin-slider-row">' +
+            '<input type="range" id="marginSlider" min="0" max="100" step="5" value="100" oninput="onMarginSliderChange(this.value)">' +
+            '<span id="marginSliderLabel">Наценка: ' + Math.round(r.marginPct) + '% (текущая)</span>' +
+            '</div>'
+        :
+            '<p class="muted small">Пока не по чему считать — ползунок появится, как только будут заполнены обращения, кассы, обмены или сервер (позиции, где известна себестоимость).</p>'
+        ) +
+        '</div>';
+
     html += '<div class="tiles">';
     html += statTile('Сколько сейчас стоит клиенту его ИТ', fmtMoney(r.grandTco), 'в месяц', null);
-    html += statTile('Сколько будут стоить наши услуги', fmtMoney(r.grandSvc), 'в месяц', 'accent');
-    html += statTile('Экономия клиента', fmtMoney(r.savingsTotal), 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad');
+    html += statTile('Сколько будут стоить наши услуги', '<span id="resultSvcValue">' + fmtMoney(r.grandSvc) + '</span>', 'в месяц', 'accent', 'resultSvcTile');
+    html += statTile('Экономия клиента', '<span id="resultSavingsValue">' + fmtMoney(r.savingsTotal) + '</span>', 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad', 'resultSavingsTile');
     html += '</div>';
     html += '<div class="tiles">';
-    html += statTile('Экономия за год', fmtMoney(r.savingsTotal * 12), '', r.savingsTotal >= 0 ? 'good' : 'bad');
-    html += statTile('Насколько выгодно', fmtPercent(r.roi), 'экономия к цене наших услуг', r.roi >= 0 ? 'good' : 'bad');
+    html += statTile('Экономия за год', '<span id="resultSavingsYearValue">' + fmtMoney(r.savingsTotal * 12) + '</span>', '', r.savingsTotal >= 0 ? 'good' : 'bad', 'resultSavingsYearTile');
+    html += statTile('Насколько выгодно', '<span id="resultRoiValue">' + fmtPercent(r.roi) + '</span>', 'экономия к цене наших услуг', r.roi >= 0 ? 'good' : 'bad', 'resultRoiTile');
     html += statTile('Уровень аудита', TIER_LABEL[r.tier], 'насколько подробно опрашивали клиента', null);
     html += '</div>';
 
@@ -1155,26 +1295,6 @@ function renderResultsStep(r) {
         'Расчёт выше сделан исходя из того, что час работы айтишника у этого клиента стоит <b>' + fmtMoney(r.cli.rateIT) + '</b>, ' +
         'а час работы специалиста по 1С — <b>' + fmtMoney(r.cli.rate1C) + '</b>. Это не оклад по договору, а полная стоимость часа (оклад + налоги, делённые на норму часов). ' +
         'Если эти цифры оценочные (клиент не смог назвать точно) — весь расчёт настолько же оценочный, и стоит это проговорить, показывая отчёт. Поменять цифры можно на шаге "Профиль клиента".' +
-        '</div>';
-
-    html += '<div class="margin-panel no-print">' +
-        '<div class="margin-panel-title">Служебное — только для нас, клиенту не показывать</div>' +
-        (r.marginCostTotal > 0 ?
-            '<p class="muted small">Ниже — часть нашей цены, где известна себестоимость (обращения, кассы, обмены, администрирование сервера). ' +
-            'Ползунок показывает диапазон от нуля (работаем в ноль, только себестоимость) до текущей заложенной наценки. ' +
-            'Если экономия клиента при текущей наценке выглядит слабо — подвиньте ползунок влево и посмотрите, при какой наценке предложение станет убедительным.</p>' +
-            '<div class="margin-slider-row">' +
-            '<input type="range" id="marginSlider" min="0" max="100" step="5" value="100" oninput="onMarginSliderChange(this.value)">' +
-            '<span id="marginSliderLabel">Наценка: ' + Math.round(r.marginPct) + '% (текущая)</span>' +
-            '</div>' +
-            '<div class="tiles">' +
-            statTile('Цена при этой наценке', '<span id="marginPreviewSvc">' + fmtMoney(r.grandSvc) + '</span>', 'в месяц', 'accent') +
-            statTile('Экономия клиента при этой наценке', '<span id="marginPreviewSavings">' + fmtMoney(r.savingsTotal) + '</span>', 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad') +
-            statTile('Насколько выгодно клиенту', '<span id="marginPreviewRoi">' + fmtPercent(r.roi) + '</span>', '', r.roi >= 0 ? 'good' : 'bad') +
-            '</div>'
-        :
-            '<p class="muted small">Пока не по чему считать — ползунок появится, как только будут заполнены обращения, кассы, обмены или сервер (позиции, где известна себестоимость).</p>'
-        ) +
         '</div>';
 
     html += '<h3 class="section-title">Экономия по каждому направлению, в месяц</h3>';
@@ -1191,10 +1311,12 @@ function renderResultsStep(r) {
         statTile('Сопровождение 1С, по зарплатам', fmtMoney(r.bottomC1), 'в месяц', null) +
         '</div></div>';
 
+    var cliNamePreview = STATE.values.CLI_0_01 || 'клиент';
     html += '<h3 class="section-title">Отчёт для клиента</h3>';
-    html += '<p class="lead">Ниже — заготовка отчёта под каждого получателя. При показе клиенту оставьте только тот раздел, который относится к тому, кто будет читать отчёт (это указано в профиле клиента).</p>';
-    html += '<div class="pain-blocks">' + AUDIENCE_PAIN.map(function (p) {
-        return '<div class="pain-card"><div class="pain-title">' + p.title + '</div><div class="pain-text">' + p.text + '</div></div>';
+    html += '<p class="lead">Ниже — превью текста под каждого получателя. При нажатии «Распечатать» система спросит, для кого готовить документ, и соберёт отдельный файл с нужным разделом, итоговыми цифрами и без служебной информации.</p>';
+    html += '<div class="pain-blocks">' + PRINT_PERSONA_ORDER.map(function (key) {
+        var p = PRINT_PERSONAS[key];
+        return '<div class="pain-card"><div class="pain-title">' + p.title + '</div><div class="pain-text">' + p.narrative(r, cliNamePreview) + '</div></div>';
     }).join('') + '</div>';
 
     html += '<div class="price-summary">Текущие расходы клиента: <b>' + fmtMoney(r.grandTco) + '</b> в месяц. ' +
@@ -1202,15 +1324,15 @@ function renderResultsStep(r) {
 
     html += '<div class="actions-row no-print">' +
         '<button class="btn" onclick="exportJson()">Скачать все данные (файл)</button>' +
-        '<button class="btn btn-outline" onclick="window.print()">Распечатать / сохранить как PDF</button>' +
+        '<button class="btn btn-outline" onclick="openPrintChooser()">Распечатать / сохранить как PDF</button>' +
         '</div>';
 
     return html;
 }
 
-function statTile(label, value, sub, tone) {
+function statTile(label, value, sub, tone, id) {
     var cls = 'tile' + (tone ? ' tile-' + tone : '');
-    return '<div class="' + cls + '"><div class="tile-label">' + escapeHtml(label) + '</div>' +
+    return '<div class="' + cls + '"' + (id ? ' id="' + id + '"' : '') + '><div class="tile-label">' + escapeHtml(label) + '</div>' +
         '<div class="tile-value">' + value + '</div>' +
         (sub ? '<div class="tile-sub">' + escapeHtml(sub) + '</div>' : '') + '</div>';
 }
@@ -1614,21 +1736,79 @@ function toggleHelp(open) {
     document.getElementById('helpOverlay').classList.toggle('open', STATE.helpOpen);
 }
 
-// Служебный ползунок «маржа» на итоговом экране — пересчитывает цену/экономию в диапазоне
-// от себестоимости (0%) до текущей заложенной наценки (100%), не трогая сохранённые данные аудита.
+// Служебный ползунок «маржа» на итоговом экране — пересчитывает результат аудита (цену наших
+// услуг, экономию клиента, выгоду) в диапазоне от себестоимости (0%) до текущей заложенной
+// наценки (100%), не трогая сохранённые данные аудита. Ползунок стоит вверху именно потому,
+// что он управляет главными цифрами результата, а не отдельным изолированным превью.
+function setTileTone(tileId, isGood) {
+    var el = document.getElementById(tileId);
+    if (!el) return;
+    el.classList.remove('tile-good', 'tile-bad');
+    el.classList.add(isGood ? 'tile-good' : 'tile-bad');
+}
 function onMarginSliderChange(levelPct) {
     var r = STATE.lastResult;
     if (!r) return;
     var adjustedSvc = svcAtMarginLevel(r, levelPct);
     var adjustedSavings = r.grandTco - adjustedSvc;
     var adjustedRoi = adjustedSvc > 0 ? adjustedSavings / adjustedSvc : 0;
-    document.getElementById('marginPreviewSvc').textContent = fmtMoney(adjustedSvc);
-    document.getElementById('marginPreviewSavings').textContent = fmtMoney(adjustedSavings);
-    document.getElementById('marginPreviewRoi').textContent = fmtPercent(adjustedRoi);
+    document.getElementById('resultSvcValue').textContent = fmtMoney(adjustedSvc);
+    document.getElementById('resultSavingsValue').textContent = fmtMoney(adjustedSavings);
+    document.getElementById('resultSavingsYearValue').textContent = fmtMoney(adjustedSavings * 12);
+    document.getElementById('resultRoiValue').textContent = fmtPercent(adjustedRoi);
+    setTileTone('resultSavingsTile', adjustedSavings >= 0);
+    setTileTone('resultSavingsYearTile', adjustedSavings >= 0);
+    setTileTone('resultRoiTile', adjustedRoi >= 0);
     var label = levelPct == 100 ? 'Наценка: ' + Math.round(r.marginPct) + '% (текущая)' :
         levelPct == 0 ? 'Наценка: 0% (в ноль, только себестоимость)' :
         'Наценка: ' + Math.round(r.marginPct * levelPct / 100) + '%';
     document.getElementById('marginSliderLabel').textContent = label;
+}
+
+// ---------- Печать отчёта под конкретного получателя ----------
+function openPrintChooser() {
+    if (!STATE.lastResult) return;
+    var body = document.getElementById('printChooserBody');
+    var html = '<h3>Для кого этот отчёт?</h3>' +
+        '<p class="muted small">Соберём отдельный документ под конкретного получателя — с акцентами, которые важны именно ему, и без служебной информации.</p>' +
+        '<div class="print-chooser-options">';
+    PRINT_PERSONA_ORDER.forEach(function (key) {
+        html += '<button class="print-chooser-btn" onclick="printReportFor(\'' + key + '\')">' + PRINT_PERSONAS[key].title + '</button>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+    document.getElementById('printChooserOverlay').classList.add('open');
+}
+function closePrintChooser() {
+    document.getElementById('printChooserOverlay').classList.remove('open');
+}
+// Если инженер подвинул ползунок наценки перед печатью — печатаем именно ту цифру,
+// что видна на экране в этот момент, а не всегда полную наценку по умолчанию.
+function currentResultForPrint() {
+    var r = STATE.lastResult;
+    if (!r) return null;
+    var slider = document.getElementById('marginSlider');
+    if (!slider || Number(slider.value) === 100) return r;
+    var levelPct = Number(slider.value);
+    var adjustedSvc = svcAtMarginLevel(r, levelPct);
+    var adjustedSavings = r.grandTco - adjustedSvc;
+    var adjustedRoi = adjustedSvc > 0 ? adjustedSavings / adjustedSvc : 0;
+    var adjusted = {};
+    for (var k in r) { adjusted[k] = r[k]; }
+    adjusted.grandSvc = adjustedSvc;
+    adjusted.savingsTotal = adjustedSavings;
+    adjusted.roi = adjustedRoi;
+    return adjusted;
+}
+function printReportFor(key) {
+    closePrintChooser();
+    var r = currentResultForPrint();
+    if (!r) return;
+    var root = document.getElementById('app');
+    var original = root.innerHTML;
+    root.innerHTML = renderPrintReport(r, key);
+    window.print();
+    root.innerHTML = original;
 }
 
 // ---------- Обработка ввода (делегирование событий) ----------
