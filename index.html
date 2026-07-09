@@ -1,5 +1,11 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
 <title>Retail IT Audit — аудит ИТ розничной сети</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Внутренний инструмент Айти-Консалтинг для аудита ИТ-эксплуатации розничной сети и расчёта экономии">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232A78D6'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='white' font-family='sans-serif'%3ER%3C/text%3E%3C/svg%3E">
 <style>
 :root {
   --ink: #0B0B0B;
@@ -13,6 +19,8 @@
   --brand-tint: #E8F0FB;
   --good: #0CA30C;
   --bad: #D03B3B;
+  --bad-tint: #FBEBEB;
+  --bad-border: #F0C3C3;
   --warning: #FAB219;
   --radius: 10px;
   --hue-HD: #2A78D6;
@@ -32,17 +40,21 @@
     --gridline: #33322F;
     --brand: #3987E5;
     --brand-tint: rgba(57,135,229,0.16);
+    --bad-tint: rgba(208,59,59,0.16);
+    --bad-border: rgba(208,59,59,0.4);
   }
 }
 :root[data-theme="dark"] {
   --ink: #FFFFFF; --ink-secondary: #C3C2B7; --ink-muted: #9A9890;
   --surface: #1F1F1E; --page: #141413; --border: rgba(255,255,255,0.12);
   --gridline: #33322F; --brand: #3987E5; --brand-tint: rgba(57,135,229,0.16);
+  --bad-tint: rgba(208,59,59,0.16); --bad-border: rgba(208,59,59,0.4);
 }
 :root[data-theme="light"] {
   --ink: #0B0B0B; --ink-secondary: #52514E; --ink-muted: #898781;
   --surface: #FCFCFB; --page: #F0EFEC; --border: rgba(11,11,11,0.12);
   --gridline: #E1E0D9; --brand: #2A78D6; --brand-tint: #E8F0FB;
+  --bad-tint: #FBEBEB; --bad-border: #F0C3C3;
 }
 
 * { box-sizing: border-box; }
@@ -69,13 +81,15 @@ input, select, button { font-family: inherit; font-size: inherit; }
   margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.rail::-webkit-scrollbar { display: none; }
 .rail-item {
   display: flex; align-items: center; gap: 6px;
   border: none; background: none; cursor: pointer;
   padding: 6px 10px; border-radius: 999px;
   color: var(--ink-muted); white-space: nowrap;
-  font-size: 13px;
+  font-size: 13px; flex: none;
 }
 .rail-item:hover { background: var(--brand-tint); }
 .rail-num {
@@ -128,7 +142,7 @@ input, select, button { font-family: inherit; font-size: inherit; }
 
 .step-header { margin: 6px 0 18px; border-left: 4px solid var(--accent, var(--brand)); padding-left: 14px; }
 .step-eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 700; color: var(--accent, var(--brand)); }
-.step-header h2 { margin: 2px 0 0; font-size: 24px; letter-spacing: -0.01em; }
+.step-header h1 { margin: 2px 0 0; font-size: 24px; letter-spacing: -0.01em; font-weight: 700; }
 .section-title { font-size: 17px; margin: 30px 0 12px; }
 
 /* ---- blocks / fields ---- */
@@ -159,14 +173,19 @@ details[open] > .block-summary::before { transform: rotate(90deg); }
 .field:last-child { border-bottom: none; }
 .field-label { display: block; font-size: 14px; margin-bottom: 6px; }
 .field-required { color: var(--bad); margin-left: 3px; }
-.field-missing { border-left-color: var(--bad); background: color-mix(in srgb, var(--bad) 6%, transparent); padding-left: 10px; }
+.field-missing { border-left-color: var(--bad); background: var(--bad-tint); padding-left: 10px; }
 .field-hint { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
 .field-input-wrap { position: relative; display: inline-block; width: 100%; max-width: 260px; }
 .extra-fields { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 4px; }
-.extra-fields summary { cursor: pointer; font-size: 12.5px; color: var(--ink-muted); padding: 8px 0; list-style: none; }
+.extra-fields summary {
+  cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--brand);
+  padding: 8px 10px; margin: 4px 0; list-style: none; display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 999px; background: var(--brand-tint);
+}
+.extra-fields summary:hover { filter: brightness(0.97); }
 .extra-fields summary::-webkit-details-marker { display: none; }
-.extra-fields summary::before { content: '+ '; }
-.extra-fields[open] summary::before { content: '− '; }
+.extra-fields summary::before { content: '+'; font-weight: 700; }
+.extra-fields[open] summary::before { content: '−'; }
 .field-input {
   width: 100%; max-width: 260px; padding: 9px 12px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--brand-tint); color: var(--ink);
@@ -176,14 +195,19 @@ select.field-input { max-width: 320px; }
 .field-suffix { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); font-size: 13px; pointer-events: none; }
 
 .tier-hint { background: var(--brand-tint); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--ink-secondary); margin-bottom: 16px; }
+.progress-badge {
+  display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--ink-secondary);
+  background: var(--gridline); border-radius: 999px; padding: 5px 12px; margin: 10px 0 16px;
+}
+.progress-badge.progress-done { background: var(--good); color: #fff; }
 .tier-result { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 10px; }
 .tier-result-label { font-size: 12px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
 .tier-result-value { font-size: 26px; font-weight: 700; color: var(--brand); margin: 4px 0; }
 .tier-result-explain { font-size: 13px; color: var(--ink-secondary); }
 
 .warn-card {
-  background: color-mix(in srgb, var(--bad) 8%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--bad) 35%, var(--border));
+  background: var(--bad-tint);
+  border: 1px solid var(--bad-border);
   border-left: 4px solid var(--bad);
   border-radius: var(--radius); padding: 14px 16px; margin: 14px 0;
 }
@@ -213,6 +237,11 @@ select.field-input { max-width: 320px; }
 .tariff-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .muted { color: var(--ink-muted); }
 .small { font-size: 12px; }
+.link-btn {
+  border: none; background: none; padding: 0; margin: 0; font: inherit;
+  color: var(--brand); text-decoration: underline; cursor: pointer;
+}
+.link-btn:hover { color: var(--ink); }
 
 /* ---- results tiles ---- */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -275,9 +304,14 @@ select.field-input { max-width: 320px; }
 @media (max-width: 640px) {
   .intro h1 { font-size: 26px; }
   .content-intro { padding-top: 6vh; }
+  .rail-item .rail-name { display: none; }
+  .rail-item.active .rail-name { display: inline; }
+  .rail-item { padding: 6px; }
+  .rail-item.active { padding: 6px 12px 6px 6px; }
 }
 </style>
-
+</head>
+<body>
 <button id="helpBtn" onclick="toggleHelp()" title="Инструкция" aria-label="Инструкция">?</button>
 <div id="saveIndicator"></div>
 
@@ -289,7 +323,6 @@ select.field-input { max-width: 320px; }
     <div id="helpBody"></div>
   </div>
 </div>
-
 <script>
 /* Полифиллы для очень старых движков (используются только если метод ещё не определён —
    в любом настоящем браузере эти строки ничего не меняют, это чистая подстраховка). */
@@ -615,7 +648,7 @@ var TCO = {
     HD_1: function (v, cli) { return (v.HD_1_01 * v.HD_1_07) / 60 * cli.rateIT; },
     HD_2: function (v, cli) { return v.HD_2_01 * v.HD_2_02 * cli.rateIT; },
     HD_3: function (v, cli) { return v.HD_3_05; },
-    HD_4: function (v, cli) { return v.HD_4_02 * v.HD_4_05 * cli.rateIT + (cli.staff * v.HD_4_04) * v.HD_4_06 * cli.rateIT; },
+    HD_4: function (v, cli) { return v.HD_4_02 * v.HD_4_05 * cli.rateIT + (cli.staff * v.HD_4_04 / 100) * v.HD_4_06 * cli.rateIT; },
     C1_2: function (v, cli) { return ((v.C1_2_05 * v.C1_2_06 * cli.rate1C) + (v.C1_2_07 * revenuePerHour(cli))) / 12; },
     C1_3: function (v, cli) { return v.C1_3_05 * cli.rate1C; },
     C1_4: function (v, cli) { return v.C1_4_03 * v.C1_4_04 * cli.rate1C; },
@@ -727,9 +760,9 @@ function computeAll(rawValues, rawCli) {
     result.savingsTotal = result.grandTco - result.grandSvc;
     result.roi = result.grandSvc > 0 ? result.savingsTotal / result.grandSvc : 0;
 
-    result.bottomHD = v.HD_5_02 + v.HD_5_07 * v.HD_5_06;
-    result.bottomC1 = v.C1_7_02 + v.HD_5_07 * (1 - v.HD_5_06);
-    result.c1_7_03 = 1 - v.HD_5_06;
+    result.bottomHD = v.HD_5_02 + v.HD_5_07 * (v.HD_5_06 / 100);
+    result.bottomC1 = v.C1_7_02 + v.HD_5_07 * (1 - v.HD_5_06 / 100);
+    result.c1_7_03 = 100 - v.HD_5_06;
 
     result.savingsByProduct = {};
     for (product in result.tcoTotal) {
@@ -970,6 +1003,22 @@ function renderBlock(block) {
         '</details>';
 }
 
+function renderProgressBadge(blocks) {
+    var total = 0, filled = 0;
+    blocks.forEach(function (b) {
+        b.fields.forEach(function (f) {
+            if (!f.required) return;
+            total++;
+            if (!isFieldEmpty(f)) filled++;
+        });
+    });
+    if (total === 0) return '';
+    var done = filled === total;
+    return '<div class="progress-badge' + (done ? ' progress-done' : '') + '">' +
+        (done ? 'Готово: ' : 'Заполнено: ') + filled + ' из ' + total + ' обязательных полей' +
+        '</div>';
+}
+
 function renderProductStep(product) {
     var meta = PRODUCT_META[product];
     var blocks = blocksForStep(product);
@@ -979,8 +1028,8 @@ function renderProductStep(product) {
         : '';
     return '<div class="step-header" style="--accent:' + meta.hue + '">' +
         '<div class="step-eyebrow">Продукт</div>' +
-        '<h2>' + escapeHtml(meta.name) + '</h2>' +
-        '</div>' + tierNote +
+        '<h1>' + escapeHtml(meta.name) + '</h1>' +
+        '</div>' + renderProgressBadge(blocks) + tierNote +
         '<div class="blocks">' + blocks.map(renderBlock).join('') + '</div>';
 }
 
@@ -993,7 +1042,8 @@ function renderProfileStep() {
         '<div class="tier-result-explain">' + tierExplain(tier) + '</div>' +
         '</div>';
     return '<div class="step-header" style="--accent:#2A78D6">' +
-        '<div class="step-eyebrow">Начало</div><h2>Профиль клиента</h2></div>' +
+        '<div class="step-eyebrow">Начало</div><h1>Профиль клиента</h1></div>' +
+        renderProgressBadge(blocks) +
         '<div class="blocks">' + blocks.map(renderBlock).join('') + '</div>' +
         tierBox;
 }
@@ -1015,7 +1065,7 @@ function renderTariffsStep() {
         var hue = PRODUCT_META[id.split('_')[0] === '1' ? 'C1' : id.replace(/_\d+$/, '')] ;
         rows.push('<tr><td>' + escapeHtml(titleOf[id] || id) + '</td><td class="num">' + fmtMoney(t.rate) + '</td><td class="muted">' + escapeHtml(t.unit) + '</td></tr>');
     });
-    return '<div class="step-header" style="--accent:#2A78D6"><div class="step-eyebrow">Цены</div><h2>Наши тарифы</h2></div>' +
+    return '<div class="step-header" style="--accent:#2A78D6"><div class="step-eyebrow">Цены</div><h1>Наши тарифы</h1></div>' +
         '<p class="lead">Это тарифы Айти-Консалтинг — они настроены централизованно, на выезде их менять не нужно. ' +
         'Здесь только для справки: ниже автоматически посчитается стоимость услуг по этим тарифам и объёмам, которые вы внесли на предыдущих шагах.</p>' +
         '<div class="table-wrap"><table class="tariff-table"><thead><tr><th>Услуга</th><th>Тариф</th><th>Единица</th></tr></thead><tbody>' +
@@ -1032,7 +1082,7 @@ var AUDIENCE_PAIN = [
 ];
 
 function renderResultsStep(r) {
-    var html = '<div class="step-header" style="--accent:#2A78D6"><div class="step-eyebrow">Итог</div><h2>Результаты аудита</h2></div>';
+    var html = '<div class="step-header" style="--accent:#2A78D6"><div class="step-eyebrow">Итог</div><h1>Результаты аудита</h1></div>';
 
     if (r.grandTco === 0 && r.grandSvc === 0) {
         html += '<div class="warn-card warn-card-big">' +
@@ -1106,7 +1156,7 @@ function barChart(byProduct) {
     var order = ['HD','C1','KKT','MARK','INFRA'];
     var items = order.map(function (p) { return { name: CHART_SHORT_NAME[p], val: byProduct[p] || 0 }; });
     var max = Math.max.apply(null, items.map(function (i) { return Math.abs(i.val); }).concat([1]));
-    var w = 640, rowH = 40, padL = 190, padR = 70, h = items.length * rowH + 20;
+    var w = 640, rowH = 40, padL = 190, padR = 100, h = items.length * rowH + 20;
     var midX = padL + (w - padL - padR) / 2;
     var scale = (w - padL - padR) / 2 / max;
     var bars = items.map(function (item, i) {
@@ -1127,18 +1177,18 @@ function compareChart(tco, svc) {
     var order = ['HD','C1','KKT','MARK','INFRA'];
     var items = order.map(function (p) { return { name: CHART_SHORT_NAME[p], tco: tco[p] || 0, svc: svc[p] || 0 }; });
     var max = Math.max.apply(null, items.map(function (i) { return Math.max(i.tco, i.svc); }).concat([1]));
-    var w = 640, rowH = 56, padL = 190, padR = 20, h = items.length * rowH + 20;
+    var w = 640, rowH = 56, padL = 190, padR = 110, h = items.length * rowH + 20;
     var scale = (w - padL - padR) / max;
     var bars = items.map(function (item, i) {
         var y = 12 + i * rowH;
         var w1 = item.tco * scale, w2 = item.svc * scale;
         return '<text x="' + (padL - 12) + '" y="' + (y + 22) + '" text-anchor="end" class="chart-label">' + escapeHtml(item.name) + '</text>' +
-            '<rect x="' + padL + '" y="' + y + '" width="' + Math.max(w1,1).toFixed(1) + '" height="16" rx="3" fill="var(--muted-ink)"></rect>' +
+            '<rect x="' + padL + '" y="' + y + '" width="' + Math.max(w1,1).toFixed(1) + '" height="16" rx="3" fill="var(--ink-muted)"></rect>' +
             '<text x="' + (padL + w1 + 8) + '" y="' + (y + 13) + '" class="chart-value-sm">' + fmtMoney(item.tco) + '</text>' +
             '<rect x="' + padL + '" y="' + (y + 20) + '" width="' + Math.max(w2,1).toFixed(1) + '" height="16" rx="3" fill="var(--brand)"></rect>' +
             '<text x="' + (padL + w2 + 8) + '" y="' + (y + 33) + '" class="chart-value-sm">' + fmtMoney(item.svc) + '</text>';
     }).join('');
-    return '<div class="chart-legend"><span><i class="dot" style="background:var(--muted-ink)"></i>Сейчас у клиента</span><span><i class="dot" style="background:var(--brand)"></i>С нами</span></div>' +
+    return '<div class="chart-legend"><span><i class="dot" style="background:var(--ink-muted)"></i>Сейчас у клиента</span><span><i class="dot" style="background:var(--brand)"></i>С нами</span></div>' +
         '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Сравнение текущей стоимости и стоимости услуг">' + bars + '</svg>';
 }
 
@@ -1242,13 +1292,13 @@ var EXAMPLE_DATA = {
   HD_2_05: "Вручную, на каждую программу отдельно",
 
   HD_3_01: "yes", HD_3_02: "Устно обещают приехать за 3-4 часа", HD_3_03: "1-2 дня",
-  HD_3_04: 0.65, HD_3_05: 60000, HD_3_06: 5,
+  HD_3_04: 65, HD_3_05: 60000, HD_3_06: 5,
 
   HD_4_01: "yes", HD_4_02: 10, HD_4_03: "Директор магазина показывает на месте",
-  HD_4_04: 0.4, HD_4_05: 2, HD_4_06: 1,
+  HD_4_04: 40, HD_4_05: 2, HD_4_06: 1,
 
-  HD_5_01: 1.5, HD_5_02: 48000, HD_5_03: 0.05, HD_5_04: "yes",
-  HD_5_05: "Сергей, системный администратор", HD_5_06: 0.6, HD_5_07: 85000,
+  HD_5_01: 1.5, HD_5_02: 48000, HD_5_03: 5, HD_5_04: "yes",
+  HD_5_05: "Сергей, системный администратор", HD_5_06: 60, HD_5_07: 85000,
 
   C1_1_01: "1С:Розница 2.3, 1С:Управление торговлей 11.5", C1_1_02: 3,
   C1_1_03: "Работает на общем сервере в офисе, магазины подключаются удалённо",
@@ -1280,7 +1330,7 @@ var EXAMPLE_DATA = {
 
   KKT_6_01: 2, KKT_6_02: "Та же сторонняя фирма", KKT_6_03: 3,
 
-  MARK_1_01: "Верхняя одежда (пальто, куртки, трикотаж)", MARK_1_02: 0.45, MARK_1_03: 1800,
+  MARK_1_01: "Верхняя одежда (пальто, куртки, трикотаж)", MARK_1_02: 45, MARK_1_03: 1800,
 
   MARK_2_01: "Оператор ЭДО Такском", MARK_2_02: 12, MARK_2_03: 220, MARK_2_04: 4, MARK_2_05: 1,
 
@@ -1424,7 +1474,7 @@ function renderIntro() {
         '<div class="intro-col-title">Новый клиент</div>' +
         '<button class="btn btn-lg" onclick="startNewAudit()">Начать новый аудит</button>' +
         '<button class="btn btn-outline" onclick="toggleHelp(true)">Как этим пользоваться</button>' +
-        '<p class="muted small"><a href="#" onclick="loadExample(); return false;">Посмотреть на готовом примере</a> — заполнит вымышленный магазин, чтобы сразу увидеть, как выглядит результат.</p>' +
+        '<p class="muted small"><button class="link-btn" onclick="loadExample()">Посмотреть на готовом примере</button> — заполнит вымышленный магазин, чтобы сразу увидеть, как выглядит результат.</p>' +
         '</div>' +
         '<div class="intro-col-list">' +
         '<div class="intro-col-title">Сохранённые аудиты (в этом браузере)</div>' +
@@ -1478,6 +1528,11 @@ function render() {
     root.innerHTML =
         (showRail ? renderRail() : '') +
         '<main class="content' + (step === 'intro' ? ' content-intro' : '') + '">' + missingBox + body + nav + '</main>';
+
+    var activeRailItem = root.querySelector('.rail-item.active');
+    if (activeRailItem && activeRailItem.scrollIntoView) {
+        activeRailItem.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
 }
 
 // ---------- Помощь / инструкция ----------
@@ -1498,6 +1553,17 @@ function handleFieldChange(e) {
     var wrap = t.closest('.field');
     if (wrap) wrap.classList.toggle('field-missing', false);
     saveState();
+    var pbadge = document.querySelector('.progress-badge');
+    if (pbadge) {
+        var stepBlocks = currentStepBlocks();
+        var newBadge = renderProgressBadge(stepBlocks);
+        if (newBadge) {
+            var tmp = document.createElement('div');
+            tmp.innerHTML = newBadge;
+            pbadge.className = tmp.firstChild.className;
+            pbadge.textContent = tmp.firstChild.textContent;
+        }
+    }
     if (id === 'CLI_0_02' || id === 'CLI_0_15') {
         var box = document.querySelector('.tier-result');
         if (box) {
@@ -1525,3 +1591,5 @@ document.addEventListener('DOMContentLoaded', function () {
     render();
 });
 </script>
+</body>
+</html>
