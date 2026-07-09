@@ -1,0 +1,1527 @@
+<title>Retail IT Audit — аудит ИТ розничной сети</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ink: #0B0B0B;
+  --ink-secondary: #52514E;
+  --ink-muted: #898781;
+  --surface: #FCFCFB;
+  --page: #F0EFEC;
+  --border: rgba(11,11,11,0.12);
+  --gridline: #E1E0D9;
+  --brand: #2A78D6;
+  --brand-tint: #E8F0FB;
+  --good: #0CA30C;
+  --bad: #D03B3B;
+  --warning: #FAB219;
+  --radius: 10px;
+  --hue-HD: #2A78D6;
+  --hue-C1: #1BAF7A;
+  --hue-KKT: #EDA100;
+  --hue-MARK: #008300;
+  --hue-INFRA: #4A3AA7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #FFFFFF;
+    --ink-secondary: #C3C2B7;
+    --ink-muted: #9A9890;
+    --surface: #1F1F1E;
+    --page: #141413;
+    --border: rgba(255,255,255,0.12);
+    --gridline: #33322F;
+    --brand: #3987E5;
+    --brand-tint: rgba(57,135,229,0.16);
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #FFFFFF; --ink-secondary: #C3C2B7; --ink-muted: #9A9890;
+  --surface: #1F1F1E; --page: #141413; --border: rgba(255,255,255,0.12);
+  --gridline: #33322F; --brand: #3987E5; --brand-tint: rgba(57,135,229,0.16);
+}
+:root[data-theme="light"] {
+  --ink: #0B0B0B; --ink-secondary: #52514E; --ink-muted: #898781;
+  --surface: #FCFCFB; --page: #F0EFEC; --border: rgba(11,11,11,0.12);
+  --gridline: #E1E0D9; --brand: #2A78D6; --brand-tint: #E8F0FB;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+input, select, button { font-family: inherit; font-size: inherit; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---- shell ---- */
+#app { max-width: 900px; margin: 0 auto; padding: 0 20px 80px; }
+
+.rail {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 14px 0 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  -webkit-overflow-scrolling: touch;
+}
+.rail-item {
+  display: flex; align-items: center; gap: 6px;
+  border: none; background: none; cursor: pointer;
+  padding: 6px 10px; border-radius: 999px;
+  color: var(--ink-muted); white-space: nowrap;
+  font-size: 13px;
+}
+.rail-item:hover { background: var(--brand-tint); }
+.rail-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--gridline); color: var(--ink-secondary);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; flex: none;
+}
+.rail-item.done .rail-num { background: var(--good); color: #fff; }
+.rail-item.active { color: var(--ink); font-weight: 600; }
+.rail-item.active .rail-num { background: var(--brand); color: #fff; }
+.rail-back {
+  border: none; background: none; cursor: pointer; color: var(--ink-muted);
+  font-size: 13px; padding: 6px 10px 6px 0; margin-right: 6px; border-right: 1px solid var(--border); flex: none;
+}
+.rail-back:hover { color: var(--ink); }
+
+.content { padding-top: 8px; }
+.content-intro { max-width: 880px; margin: 0 auto; padding-top: 7vh; }
+
+.intro-eyebrow {
+  text-transform: uppercase; letter-spacing: .08em; font-size: 12px;
+  font-weight: 700; color: var(--brand);
+}
+.intro h1 { font-size: 32px; margin: 8px 0 18px; text-wrap: balance; letter-spacing: -0.02em; }
+.lead { color: var(--ink-secondary); font-size: 16px; max-width: 68ch; }
+
+.intro-columns { display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 28px; margin-top: 28px; align-items: start; }
+.intro-col-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--ink-muted); margin-bottom: 12px; }
+.intro-col-new { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.intro-col-new .btn { width: 100%; }
+.audit-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.audit-empty { color: var(--ink-muted); font-size: 13.5px; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); padding: 16px; }
+.audit-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; cursor: pointer;
+}
+.audit-item:hover { border-color: var(--brand); }
+.audit-item-name { font-weight: 600; }
+.audit-item-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+.audit-item-del {
+  border: none; background: none; color: var(--ink-muted); cursor: pointer;
+  width: 26px; height: 26px; border-radius: 50%; flex: none; font-size: 13px;
+}
+.audit-item-del:hover { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+@media (max-width: 720px) {
+  .intro-columns { grid-template-columns: 1fr; }
+}
+
+.step-header { margin: 6px 0 18px; border-left: 4px solid var(--accent, var(--brand)); padding-left: 14px; }
+.step-eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 700; color: var(--accent, var(--brand)); }
+.step-header h2 { margin: 2px 0 0; font-size: 24px; letter-spacing: -0.01em; }
+.section-title { font-size: 17px; margin: 30px 0 12px; }
+
+/* ---- blocks / fields ---- */
+.blocks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.block-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.block-summary {
+  cursor: pointer; list-style: none; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-weight: 600;
+}
+.block-summary::-webkit-details-marker { display: none; }
+.block-summary::before { content: '▸'; color: var(--ink-muted); margin-right: 8px; font-size: 12px; transition: transform .15s; }
+details[open] > .block-summary::before { transform: rotate(90deg); }
+.block-title { flex: 1; }
+.badge {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  white-space: nowrap; color: var(--ink-secondary); background: var(--gridline);
+}
+.badge-must { background: var(--brand-tint); color: var(--brand); }
+.badge-optional { background: var(--gridline); color: var(--ink-muted); }
+.block-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); }
+.block-note { color: var(--ink-secondary); font-size: 13px; padding: 10px 0 4px; }
+
+.field { display: block; padding: 10px 0; border-bottom: 1px dashed var(--gridline); border-left: 3px solid transparent; transition: border-color .15s, background .15s; }
+.field:last-child { border-bottom: none; }
+.field-label { display: block; font-size: 14px; margin-bottom: 6px; }
+.field-required { color: var(--bad); margin-left: 3px; }
+.field-missing { border-left-color: var(--bad); background: color-mix(in srgb, var(--bad) 6%, transparent); padding-left: 10px; }
+.field-hint { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+.field-input-wrap { position: relative; display: inline-block; width: 100%; max-width: 260px; }
+.extra-fields { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 4px; }
+.extra-fields summary { cursor: pointer; font-size: 12.5px; color: var(--ink-muted); padding: 8px 0; list-style: none; }
+.extra-fields summary::-webkit-details-marker { display: none; }
+.extra-fields summary::before { content: '+ '; }
+.extra-fields[open] summary::before { content: '− '; }
+.field-input {
+  width: 100%; max-width: 260px; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--brand-tint); color: var(--ink);
+}
+.field-input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+select.field-input { max-width: 320px; }
+.field-suffix { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); font-size: 13px; pointer-events: none; }
+
+.tier-hint { background: var(--brand-tint); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--ink-secondary); margin-bottom: 16px; }
+.tier-result { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 10px; }
+.tier-result-label { font-size: 12px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+.tier-result-value { font-size: 26px; font-weight: 700; color: var(--brand); margin: 4px 0; }
+.tier-result-explain { font-size: 13px; color: var(--ink-secondary); }
+
+.warn-card {
+  background: color-mix(in srgb, var(--bad) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--bad) 35%, var(--border));
+  border-left: 4px solid var(--bad);
+  border-radius: var(--radius); padding: 14px 16px; margin: 14px 0;
+}
+.warn-card-big { padding: 20px; }
+.warn-title { font-weight: 700; color: var(--bad); margin-bottom: 6px; }
+.warn-list { margin: 6px 0 12px; padding-left: 20px; font-size: 13px; color: var(--ink-secondary); }
+.warn-hint { font-size: 13px; color: var(--ink-secondary); }
+
+/* ---- buttons / nav ---- */
+.btn {
+  border: none; background: var(--brand); color: #fff; font-weight: 600;
+  padding: 10px 18px; border-radius: 8px; cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--ink); }
+.btn-lg { font-size: 16px; padding: 13px 24px; }
+.actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.step-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); }
+.step-progress { color: var(--ink-muted); font-size: 13px; }
+
+/* ---- tariffs table ---- */
+.table-wrap { overflow-x: auto; }
+.tariff-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tariff-table th { text-align: left; color: var(--ink-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.tariff-table td { padding: 9px 10px; border-bottom: 1px solid var(--gridline); }
+.tariff-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.muted { color: var(--ink-muted); }
+.small { font-size: 12px; }
+
+/* ---- results tiles ---- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--brand); border-radius: var(--radius); padding: 14px 16px; }
+.tile-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); font-weight: 700; }
+.tile-value { font-size: 24px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tile-sub { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+.tile-good { border-top-color: var(--good); } .tile-good .tile-value { color: var(--good); }
+.tile-bad { border-top-color: var(--bad); } .tile-bad .tile-value { color: var(--bad); }
+.tile-accent .tile-value { color: var(--brand); }
+
+.chart { width: 100%; height: auto; }
+.chart-label { font-size: 12px; fill: var(--ink-secondary); }
+.chart-value { font-size: 12px; font-weight: 600; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.chart-value-sm { font-size: 10.5px; fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.chart-axis { stroke: var(--gridline); stroke-width: 1; }
+.chart-legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-secondary); margin-bottom: 6px; }
+.chart-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; }
+
+.bottom-check { background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px 16px; margin: 20px 0; }
+.assumptions-note { background: var(--brand-tint); border-radius: var(--radius); padding: 12px 16px; font-size: 13.5px; color: var(--ink-secondary); margin-bottom: 6px; }
+.assumptions-note b { color: var(--ink); }
+.pain-blocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 12px; }
+.pain-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--radius); padding: 14px 16px; }
+.pain-title { font-weight: 700; margin-bottom: 6px; }
+.pain-text { font-size: 13px; color: var(--ink-secondary); }
+.price-summary { background: var(--brand-tint); border-radius: var(--radius); padding: 14px 16px; margin-top: 20px; font-size: 14px; }
+
+/* ---- save indicator / help ---- */
+#saveIndicator {
+  position: fixed; bottom: 16px; left: 50%; transform: translate(-50%, 10px);
+  background: var(--ink); color: var(--surface); font-size: 12px; padding: 7px 14px;
+  border-radius: 999px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
+}
+#saveIndicator.show { opacity: .92; transform: translate(-50%, 0); }
+
+#helpBtn {
+  position: fixed; top: 14px; right: 16px; z-index: 5;
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink); font-weight: 700; cursor: pointer;
+}
+#helpOverlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; z-index: 10;
+  align-items: flex-start; justify-content: center; padding: 40px 16px;
+}
+#helpOverlay.open { display: flex; }
+.help-panel { background: var(--surface); max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto; border-radius: 14px; padding: 24px 28px; }
+.help-panel h3 { margin: 20px 0 8px; font-size: 15px; }
+.help-panel h3:first-child { margin-top: 0; }
+.help-panel p { color: var(--ink-secondary); font-size: 13.5px; margin: 0 0 10px; }
+.help-close { float: right; border: none; background: var(--gridline); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; color: var(--ink); }
+
+.no-print {}
+@media print {
+  .rail, .no-print, #helpBtn, #saveIndicator { display: none !important; }
+  #app { max-width: none; padding: 0; }
+  body { background: #fff; color: #000; }
+  .tile, .pain-card, .block-card { break-inside: avoid; }
+}
+@media (max-width: 640px) {
+  .intro h1 { font-size: 26px; }
+  .content-intro { padding-top: 6vh; }
+}
+</style>
+
+<button id="helpBtn" onclick="toggleHelp()" title="Инструкция" aria-label="Инструкция">?</button>
+<div id="saveIndicator"></div>
+
+<div id="app"></div>
+
+<div id="helpOverlay" onclick="if(event.target===this) toggleHelp(false)">
+  <div class="help-panel">
+    <button class="help-close" onclick="toggleHelp(false)" aria-label="Закрыть">✕</button>
+    <div id="helpBody"></div>
+  </div>
+</div>
+
+<script>
+/* Полифиллы для очень старых движков (используются только если метод ещё не определён —
+   в любом настоящем браузере эти строки ничего не меняют, это чистая подстраховка). */
+if (!Array.prototype.filter) {
+    Array.prototype.filter = function (fn) {
+        var out = [];
+        for (var i = 0; i < this.length; i++) { if (fn(this[i], i)) out.push(this[i]); }
+        return out;
+    };
+}
+if (!Array.prototype.map) {
+    Array.prototype.map = function (fn) {
+        var out = [];
+        for (var i = 0; i < this.length; i++) { out.push(fn(this[i], i)); }
+        return out;
+    };
+}
+if (!Array.prototype.forEach) {
+    Array.prototype.forEach = function (fn) {
+        for (var i = 0; i < this.length; i++) { fn(this[i], i); }
+    };
+}
+if (!Array.prototype.indexOf) {
+    Array.prototype.indexOf = function (val) {
+        for (var i = 0; i < this.length; i++) { if (this[i] === val) return i; }
+        return -1;
+    };
+}
+if (!String.prototype.trim) {
+    String.prototype.trim = function () { return this.replace(/^\s+|\s+$/g, ''); };
+}
+/* ============================================================
+   Retail IT Audit — данные (продукты/блоки/поля) и расчётный движок.
+   Упрощённые формулировки: без английских сокращений (SLA, ROI, FTE, NAS, VPN и т.п.),
+   без внутренних кодов в тексте вопроса — только понятная формулировка + маленькая подсказка.
+   Коды полей (HD_1_01 и т.п.) сохранены как внутренние id — те же, что в Excel-версии,
+   для проверяемости и на будущее (сверка/перенос данных).
+   ============================================================ */
+
+var PRODUCT_META = {
+    CLI:   { name: 'Профиль клиента', hue: '#2A78D6' },
+    HD:    { name: 'Служба поддержки пользователей', hue: '#2A78D6' },
+    C1:    { name: 'Сопровождение 1С', hue: '#1BAF7A' },
+    KKT:   { name: 'Кассы и оборудование', hue: '#EDA100' },
+    MARK:  { name: 'Маркировка товаров', hue: '#008300' },
+    INFRA: { name: 'Компьютеры и сеть', hue: '#4A3AA7' }
+};
+
+// type: N=число, P=процент, T=текст, D=да/нет, C=вычисляется автоматически
+var BLOCKS = [
+// ---------------- ПРОФИЛЬ КЛИЕНТА ----------------
+{ id:'CLI_0', product:'CLI', title:'Профиль клиента', must:true,
+  note:'Заполняется первым — определяет, сколько вопросов дальше реально нужно задавать.',
+  fields:[
+    {id:'CLI_0_01', label:'Название сети или магазина', type:'T'},
+    {id:'CLI_0_02', required:true, label:'Сколько магазинов (точек продаж)', type:'N'},
+    {id:'CLI_0_03', label:'География сети', type:'T', hint:'один город / несколько городов / вся страна'},
+    {id:'CLI_0_04', required:true, label:'Сколько всего сотрудников в сети', type:'N', hint:'все сотрудники, не только те, кто занимается компьютерами'},
+    {id:'CLI_0_05', required:true, label:'Сколько сеть зарабатывает в месяц, руб.', type:'N', hint:'примерный оборот — нужен для расчёта потерь от простоя'},
+    {id:'CLI_0_06', label:'Есть ли у клиента свои сотрудники, которые занимаются компьютерами и кассами', type:'T', hint:'да/нет, сколько человек'},
+    {id:'CLI_0_07', label:'Кто сейчас всем этим занимается', type:'T', hint:'свои сотрудники / наняли стороннюю фирму / никто конкретно'},
+    {id:'CLI_0_08', label:'Кто попросил провести этот аудит', type:'T', hint:'должность'},
+    {id:'CLI_0_09', label:'Кому в итоге показывать результат', type:'T', hint:'можно несколько: собственник, операционный директор, финансовый директор, ИТ-директор'},
+    {id:'CLI_0_11', required:true, label:'Сколько стоит час работы айтишника у этого клиента, руб.', type:'N', hint:'не оклад по договору, а полная стоимость часа: (оклад + налоги) ÷ на норму часов. Уточняйте у бухгалтерии.'},
+    {id:'CLI_0_12', required:true, label:'Сколько стоит час работы специалиста по 1С у этого клиента, руб.', type:'N', hint:'так же — полная стоимость часа, не голый оклад'},
+    {id:'CLI_0_13', required:true, label:'Сколько часов в сутки работает один магазин', type:'N'},
+    {id:'CLI_0_15', label:'Изменить уровень аудита вручную', type:'SELECT', options:[['auto','Не менять (расчёт автоматом)'],['express','Экспресс'],['standard','Стандарт'],['extended','Расширенный']],
+      hint:'Трогайте только если видите, что клиент явно сложнее или проще, чем показывает число точек.'},
+    {id:'CLI_0_16', label:'Почему вы изменили уровень вручную', type:'T', hint:'обязательно, если поменяли уровень выше — без причины система не даст сохранить'}
+  ]},
+
+// ---------------- ПРОДУКТ 1: СЛУЖБА ПОДДЕРЖКИ ----------------
+{ id:'HD_1', product:'HD', title:'Обращения пользователей', tier:'must',
+  fields:[
+    {id:'HD_1_01', required:true, label:'Сколько обращений в поддержку приходит в месяц (в среднем)', type:'N'},
+    {id:'HD_1_02', label:'Какие это в основном обращения', type:'T', hint:'например: подскажите как сделать / вопрос по кассе / нужен доступ / что-то сломалось'},
+    {id:'HD_1_03', label:'В скольких магазинах работает эта поддержка', type:'N'},
+    {id:'HD_1_04', label:'Сколько сотрудников обращается за поддержкой', type:'N'},
+    {id:'HD_1_05', label:'Как обращаются', type:'T', hint:'звонок / почта / чат / специальная программа для заявок / просто подходят и говорят'},
+    {id:'HD_1_06', label:'Есть ли специальная программа для учёта обращений', type:'T', hint:'да/нет, какая'},
+    {id:'HD_1_07', required:true, label:'Сколько в среднем минут уходит на одно обращение', type:'N'}
+  ]},
+{ id:'HD_2', product:'HD', title:'Пароли и доступы', tier:'must',
+  fields:[
+    {id:'HD_2_01', required:true, label:'Сколько заявок на новый доступ или пароль в месяц', type:'N'},
+    {id:'HD_2_02', required:true, label:'Сколько часов в среднем уходит на одну такую заявку', type:'N'},
+    {id:'HD_2_03', label:'Есть ли чёткое правило, кому что можно (документ)', type:'D'},
+    {id:'HD_2_04', label:'Кто разрешает выдать доступ', type:'T', hint:'должность'},
+    {id:'HD_2_05', label:'Как выдают пароли', type:'T', hint:'единый вход везде / вручную на каждую программу отдельно'}
+  ]},
+{ id:'HD_3', product:'HD', title:'Сроки и качество решения проблем', tier:'partial', tierNote:'на малых сетях спрашиваем только про штрафы и жалобы',
+  fields:[
+    {id:'HD_3_01', label:'Есть ли договорённость о сроках решения проблем', type:'D', hint:'письменная или хотя бы устная'},
+    {id:'HD_3_02', label:'За сколько обещают отреагировать на самую срочную проблему', type:'T', hint:'например: не работает касса — обещают приехать за 2 часа'},
+    {id:'HD_3_03', label:'За сколько обычно решают обычные, не срочные проблемы', type:'T'},
+    {id:'HD_3_04', label:'Получается ли обычно уложиться в эти сроки, %', type:'P'},
+    {id:'HD_3_05', required:true, label:'Были ли штрафы или потери из-за долгого решения проблем за последний год, руб.', type:'N'},
+    {id:'HD_3_06', label:'Жаловались ли директора магазинов на долгие простои за год, сколько раз', type:'N', hint:'мягкий вопрос — про штрафы часто отвечают неохотно, а про жалобы честнее'}
+  ]},
+{ id:'HD_4', product:'HD', title:'Обучение сотрудников', tier:'optional', tierNote:'на малых сетях можно пропустить, кроме текучести',
+  fields:[
+    {id:'HD_4_01', label:'Есть ли инструкции или шпаргалки для сотрудников', type:'D'},
+    {id:'HD_4_02', required:true, label:'Сколько раз в год проводят обучение новых сотрудников', type:'N'},
+    {id:'HD_4_03', label:'Кто обучает сейчас', type:'T'},
+    {id:'HD_4_04', required:true, label:'Сколько сотрудников уходит и заменяется новыми за год, %', type:'P', hint:'текучесть кадров в рознице — влияет на объём переобучения'},
+    {id:'HD_4_05', required:true, label:'Сколько часов длится одно обучение', type:'N'},
+    {id:'HD_4_06', required:true, label:'Сколько часов уходит, чтобы быстро показать новому сотруднику основы (без формального обучения)', type:'N'}
+  ]},
+{ id:'HD_5', product:'HD', title:'Кто сейчас занимается поддержкой', tier:'must', bottom:true,
+  note:'Это отдельная проверка тех же цифр «снизу» — по зарплатам, а не по количеству обращений.',
+  fields:[
+    {id:'HD_5_01', label:'Сколько человек занимается поддержкой сейчас (в пересчёте на полный день)', type:'N'},
+    {id:'HD_5_02', required:true, label:'Сколько им платят в месяц всего (зарплата + налоги), руб.', type:'N', hint:'только те, кто НЕ занимается ещё и 1С'},
+    {id:'HD_5_03', label:'Сколько времени тратят на поддержку другие сотрудники, у кого это не основная работа, %', type:'P'},
+    {id:'HD_5_04', label:'Есть ли сотрудник, который занимается и поддержкой пользователей, и 1С одновременно', type:'D'},
+    {id:'HD_5_05', label:'Как зовут / должность этого сотрудника', type:'T'},
+    {id:'HD_5_06', required:true, label:'Сколько % своего времени он тратит именно на поддержку пользователей (не на 1С)', type:'P', hint:'спросите у руководителя ИТ клиента — не оценивайте сами'},
+    {id:'HD_5_07', required:true, label:'Сколько ему платят в месяц всего (зарплата + налоги), руб.', type:'N'}
+  ]},
+
+// ---------------- ПРОДУКТ 2: СОПРОВОЖДЕНИЕ 1С ----------------
+{ id:'C1_1', product:'C1', title:'Какая у клиента программа 1С', tier:'must',
+  fields:[
+    {id:'C1_1_01', label:'Какие программы 1С используются', type:'T', hint:'название, версия'},
+    {id:'C1_1_02', required:true, label:'Сколько отдельных баз данных 1С', type:'N'},
+    {id:'C1_1_03', label:'Как это устроено технически', type:'T', hint:'работает на каждом компьютере отдельно / на общем сервере / арендуют в интернете'},
+    {id:'C1_1_04', label:'Дорабатывали ли программу под себя', type:'T', hint:'да/нет, насколько сильно, если известно'},
+    {id:'C1_1_05', label:'Когда последний раз обновляли программу', type:'T'}
+  ]},
+{ id:'C1_2', product:'C1', title:'Обновления программы', tier:'must',
+  fields:[
+    {id:'C1_2_01', label:'Как часто обновляют программу', type:'T'},
+    {id:'C1_2_02', label:'Есть ли "тестовая" копия базы для проверки обновлений перед установкой на рабочую', type:'D'},
+    {id:'C1_2_03', label:'Настроены ли автоматические ночные задачи', type:'T', hint:'резервные копии, обмены данными и т.п. — да/нет, какие'},
+    {id:'C1_2_04', label:'Сколько было поломок за год из-за необновлённой или неудачно обновлённой программы', type:'N'},
+    {id:'C1_2_05', required:true, label:'Сколько плановых обновлений программы в год', type:'N'},
+    {id:'C1_2_06', required:true, label:'Сколько часов уходит на одно такое обновление', type:'N'},
+    {id:'C1_2_07', required:true, label:'Сколько часов суммарно программа не работала из-за поломок за год', type:'N'}
+  ]},
+{ id:'C1_3', product:'C1', title:'Кто что может делать в программе', tier:'partial', tierNote:'на малых сетях — только количество пользователей и лицензий',
+  fields:[
+    {id:'C1_3_01', required:true, label:'Сколько человек пользуется 1С', type:'N'},
+    {id:'C1_3_02', label:'У каждой должности свой доступ, или у всех доступ ко всему', type:'D'},
+    {id:'C1_3_03', label:'Как часто пересматривают, кому что можно', type:'T'},
+    {id:'C1_3_04', label:'Сколько лицензий 1С куплено', type:'N'},
+    {id:'C1_3_05', required:true, label:'Сколько часов в месяц уходит на настройку прав доступа', type:'N'}
+  ]},
+{ id:'C1_4', product:'C1', title:'Обмен данными с другими программами', tier:'situational', tierNote:'заполняем, если такие обмены вообще есть',
+  fields:[
+    {id:'C1_4_01', label:'С какими программами 1С обменивается данными', type:'T', hint:'кассы, маркетплейсы, электронный документооборот, банк и т.д.'},
+    {id:'C1_4_02', label:'Как устроен обмен', type:'T', hint:'стандартный / дорабатывали под себя / через постороннюю программу'},
+    {id:'C1_4_03', required:true, label:'Как часто обмен ломается (раз в месяц)', type:'N'},
+    {id:'C1_4_04', required:true, label:'Сколько часов уходит на починку одной поломки', type:'N'},
+    {id:'C1_4_05', required:true, label:'Сколько всего таких обменов настроено', type:'N'}
+  ]},
+{ id:'C1_5', product:'C1', title:'Лицензии 1С', tier:'must',
+  fields:[
+    {id:'C1_5_01', label:'Как куплена программа', type:'T', hint:'обычная лицензия / подписка / аренда'},
+    {id:'C1_5_02', required:true, label:'Сколько платят в год за продление, руб.', type:'N'},
+    {id:'C1_5_03', label:'Когда заканчивается платная техподдержка от 1С', type:'T'}
+  ]},
+{ id:'C1_6', product:'C1', title:'Сложные вопросы по 1С', tier:'must',
+  note:'Сюда не входят вопросы, которые решаются в пределах часа в базовом функционале программы (это стандартная линия ИТС, входит в обычную поддержку пользователей). Сюда относится то, что требует менять настройки программы (например, права и роли) или разбираться в методологии учёта.',
+  fields:[
+    {id:'C1_6_01', required:true, label:'Сколько сложных вопросов по 1С в месяц', type:'N', hint:'требующих настройки программы или методологии учёта, а не просто "как нажать кнопку"'},
+    {id:'C1_6_02', required:true, label:'Сколько минут уходит на один такой вопрос', type:'N'}
+  ]},
+{ id:'C1_7', product:'C1', title:'Кто сейчас занимается 1С', tier:'must', bottom:true,
+  note:'Проверка тех же цифр «снизу» — симметрично блоку поддержки пользователей.',
+  fields:[
+    {id:'C1_7_01', label:'Сколько человек занимается 1С сейчас', type:'N'},
+    {id:'C1_7_02', required:true, label:'Сколько им платят в месяц всего (зарплата + налоги), руб.', type:'N', hint:'только те, кто НЕ занимается ещё и обычной поддержкой'}
+  ]},
+
+// ---------------- ПРОДУКТ 3: КАССЫ ----------------
+{ id:'KKT_1', product:'KKT', title:'Кассы и фискальные накопители', tier:'must',
+  fields:[
+    {id:'KKT_1_01', required:true, label:'Сколько касс у клиента', type:'N'},
+    {id:'KKT_1_02', label:'Средний возраст касс, лет', type:'N'},
+    {id:'KKT_1_03', label:'Когда заканчивается срок годности фискального накопителя', type:'T', hint:'устройство внутри кассы, которое передаёт данные в налоговую'},
+    {id:'KKT_1_04', required:true, label:'Сколько раз меняли фискальный накопитель за год', type:'N'},
+    {id:'KKT_1_05', required:true, label:'Сколько стоит один накопитель, руб.', type:'N'},
+    {id:'KKT_1_06', required:true, label:'Сколько часов уходит на замену (с учётом выезда мастера)', type:'N'}
+  ]},
+{ id:'KKT_2', product:'KKT', title:'Передача данных в налоговую', tier:'must',
+  fields:[
+    {id:'KKT_2_01', label:'Кто передаёт данные в налоговую', type:'T', hint:'оператор фискальных данных'},
+    {id:'KKT_2_02', required:true, label:'Сколько платят за это в месяц за одну кассу, руб.', type:'N'},
+    {id:'KKT_2_03', required:true, label:'Сколько раз за год были проблемы с передачей данных', type:'N'},
+    {id:'KKT_2_04', required:true, label:'Сколько часов уходит на устранение одной такой проблемы', type:'N'},
+    {id:'KKT_2_05', required:true, label:'Были ли штрафы от налоговой за это за год, руб.', type:'N'},
+    {id:'KKT_2_06', label:'Были ли проверки налоговой по кассам за год', type:'T', hint:'мягкий вопрос — да/нет, по какому поводу'}
+  ]},
+{ id:'KKT_3', product:'KKT', title:'Приём оплаты картой', tier:'must',
+  fields:[
+    {id:'KKT_3_01', label:'Какой банк обеспечивает приём карт', type:'T'},
+    {id:'KKT_3_02', label:'Подключён ли терминал напрямую к кассе, или это отдельное устройство', type:'T'},
+    {id:'KKT_3_03', required:true, label:'Сколько раз в месяц ломается приём карт', type:'N'},
+    {id:'KKT_3_04', required:true, label:'Сколько часов уходит на устранение одной поломки', type:'N'},
+    {id:'KKT_3_05', required:true, label:'Сколько терминалов для приёма карт всего', type:'N'}
+  ]},
+{ id:'KKT_4', product:'KKT', title:'Сканеры, весы и другое оборудование', tier:'situational', tierNote:'заполняем, если такое оборудование есть',
+  fields:[
+    {id:'KKT_4_01', required:true, label:'Сколько единиц такого оборудования', type:'N', hint:'сканеры штрихкодов, весы, терминалы сбора данных, кассовые компьютеры'},
+    {id:'KKT_4_02', label:'Средний возраст этого оборудования, лет', type:'N'},
+    {id:'KKT_4_03', required:true, label:'Сколько поломок в месяц', type:'N'},
+    {id:'KKT_4_04', required:true, label:'Сколько стоит один ремонт или замена, руб.', type:'N'},
+    {id:'KKT_4_05', required:true, label:'Сколько часов уходит на один ремонт', type:'N'}
+  ]},
+{ id:'KKT_5', product:'KKT', title:'Ремонт касс', tier:'must',
+  fields:[
+    {id:'KKT_5_01', label:'Кто сейчас чинит кассы', type:'T', hint:'свой человек / сторонняя фирма / никто конкретно'},
+    {id:'KKT_5_02', required:true, label:'Сколько часов касса обычно не работает при поломке', type:'N'},
+    {id:'KKT_5_03', required:true, label:'Сколько сейчас стоит один выезд мастера, руб.', type:'N'},
+    {id:'KKT_5_04', required:true, label:'Сколько было выездов мастера за год', type:'N'}
+  ]},
+{ id:'KKT_6', product:'KKT', title:'Регистрация касс в налоговой', tier:'optional',
+  fields:[
+    {id:'KKT_6_01', required:true, label:'Сколько раз регистрировали или перерегистрировали кассы за год', type:'N'},
+    {id:'KKT_6_02', label:'Кто этим занимается сейчас', type:'T'},
+    {id:'KKT_6_03', required:true, label:'Сколько часов уходит на одну такую регистрацию', type:'N'}
+  ]},
+
+// ---------------- ПРОДУКТ 4: МАРКИРОВКА ----------------
+{ id:'MARK_1', product:'MARK', title:'Какой товар маркируется', tier:'situational', tierNote:'заполняем, если товар вообще маркируется',
+  fields:[
+    {id:'MARK_1_01', label:'Какой товар маркируется', type:'T', hint:'обувь, одежда, товары для животных и т.д.'},
+    {id:'MARK_1_02', label:'Какая доля товарооборота — маркированные товары, %', type:'P'},
+    {id:'MARK_1_03', label:'Сколько кодов маркировки обрабатывается в месяц', type:'N'}
+  ]},
+{ id:'MARK_2', product:'MARK', title:'Электронный документооборот', tier:'situational',
+  fields:[
+    {id:'MARK_2_01', label:'Кто обеспечивает электронный документооборот', type:'T'},
+    {id:'MARK_2_02', required:true, label:'Сколько платят за один документ, руб.', type:'N'},
+    {id:'MARK_2_03', required:true, label:'Сколько документов в месяц', type:'N'},
+    {id:'MARK_2_04', required:true, label:'Сколько раз в месяц бывают споры или расхождения по документам', type:'N'},
+    {id:'MARK_2_05', required:true, label:'Сколько часов уходит на решение одного такого случая', type:'N'}
+  ]},
+{ id:'MARK_3', product:'MARK', title:'Ошибки при работе с маркировкой', tier:'optional',
+  fields:[
+    {id:'MARK_3_01', required:true, label:'Сколько ошибок в месяц', type:'N', hint:'код не считывается, товар "не в обороте" и т.п.'},
+    {id:'MARK_3_02', required:true, label:'Сколько минут уходит на решение одной ошибки', type:'N'},
+    {id:'MARK_3_03', required:true, label:'Были ли штрафы за нарушения с маркировкой за год, руб.', type:'N'},
+    {id:'MARK_3_04', label:'Были ли проверки контролирующих органов по маркировке за год', type:'T', hint:'мягкий вопрос — да/нет, по какому поводу'}
+  ]},
+{ id:'MARK_4', product:'MARK', title:'Обучение по маркировке', tier:'optional',
+  fields:[
+    {id:'MARK_4_01', required:true, label:'Сколько консультаций по маркировке в месяц', type:'N'},
+    {id:'MARK_4_02', label:'Проводят ли отдельное обучение, когда появляется новый вид маркированного товара', type:'D'},
+    {id:'MARK_4_03', required:true, label:'Сколько минут уходит на одну консультацию', type:'N'}
+  ]},
+
+// ---------------- ПРОДУКТ 5: КОМПЬЮТЕРЫ И СЕТЬ ----------------
+{ id:'INFRA_1', product:'INFRA', title:'Компьютеры и ноутбуки', tier:'must',
+  fields:[
+    {id:'INFRA_1_01', required:true, label:'Сколько компьютеров и ноутбуков', type:'N'},
+    {id:'INFRA_1_02', label:'Средний возраст техники, лет', type:'N'},
+    {id:'INFRA_1_03', required:true, label:'Сколько заявок на ремонт или замену в месяц', type:'N'},
+    {id:'INFRA_1_04', label:'Ведётся ли учёт техники (какая есть, где стоит)', type:'D'},
+    {id:'INFRA_1_05', required:true, label:'Сколько часов уходит на решение одной заявки', type:'N'}
+  ]},
+{ id:'INFRA_2', product:'INFRA', title:'Сеть и интернет', tier:'must',
+  fields:[
+    {id:'INFRA_2_01', label:'Сколько точек Wi-Fi или сетевого оборудования на объектах', type:'N'},
+    {id:'INFRA_2_02', label:'Есть ли защищённая связь между магазинами и офисом', type:'T', hint:'да/нет, какая'},
+    {id:'INFRA_2_03', required:true, label:'Сколько раз в месяц пропадает связь или интернет', type:'N'},
+    {id:'INFRA_2_04', required:true, label:'Сколько часов уходит на восстановление', type:'N'}
+  ]},
+{ id:'INFRA_3', product:'INFRA', title:'Серверы и хранилища файлов', tier:'situational', tierNote:'часто просто нет на сети из 1-3 точек',
+  fields:[
+    {id:'INFRA_3_01', required:true, label:'Сколько серверов у клиента', type:'N'},
+    {id:'INFRA_3_02', label:'Есть ли отдельное хранилище файлов', type:'T', hint:'объём, если известно'},
+    {id:'INFRA_3_03', label:'Какой возраст оборудования, планируется ли замена', type:'T'},
+    {id:'INFRA_3_04', required:true, label:'Сколько раз ломались серверы за год', type:'N'},
+    {id:'INFRA_3_05', required:true, label:'Сколько часов в среднем не работали при поломке', type:'N'}
+  ]},
+{ id:'INFRA_4', product:'INFRA', title:'Защита от вирусов', tier:'must',
+  fields:[
+    {id:'INFRA_4_01', label:'Есть ли антивирус', type:'T', hint:'какой, на сколько компьютеров'},
+    {id:'INFRA_4_02', required:true, label:'Сколько было заражений или атак за год', type:'N'},
+    {id:'INFRA_4_03', label:'Есть ли правило про надёжные пароли', type:'D'},
+    {id:'INFRA_4_04', required:true, label:'Сколько платят за антивирус в год, руб.', type:'N'},
+    {id:'INFRA_4_05', required:true, label:'Сколько часов уходит на устранение одного заражения', type:'N'},
+    {id:'INFRA_4_06', required:true, label:'Был ли ущерб от заражений за год, руб.', type:'N'}
+  ]},
+{ id:'INFRA_5', product:'INFRA', title:'Лицензии на программы', tier:'optional',
+  fields:[
+    {id:'INFRA_5_01', label:'Какие платные программы используются', type:'T', hint:'операционная система, офисные программы и т.д.'},
+    {id:'INFRA_5_02', label:'Сколько лицензий на каждую программу', type:'N'},
+    {id:'INFRA_5_03', required:true, label:'Сколько платят в год за продление, руб.', type:'N'}
+  ]},
+{ id:'INFRA_6', product:'INFRA', title:'Резервные копии', tier:'must',
+  fields:[
+    {id:'INFRA_6_01', label:'Настроено ли автоматическое резервное копирование', type:'T', hint:'да/нет, что именно копируется'},
+    {id:'INFRA_6_02', label:'Как часто делают копию', type:'T'},
+    {id:'INFRA_6_03', label:'Проверяли ли, что из копии реально можно всё восстановить', type:'T', hint:'да/нет, когда в последний раз'},
+    {id:'INFRA_6_04', required:true, label:'Был ли ущерб от потери данных за год, руб.', type:'N'},
+    {id:'INFRA_6_05', label:'Обращались ли к сторонним специалистам за восстановлением данных за год', type:'D'},
+    {id:'INFRA_6_06', required:true, label:'Сколько часов в месяц уходит на обслуживание резервных копий', type:'N'}
+  ]}
+];
+/* ============================================================
+   Retail IT Audit — расчётный движок.
+   Проверен через cscript на тестовом сценарии (сеть из 5 точек) —
+   цифры совпадают с проверенной Excel-версией один в один.
+   ============================================================ */
+
+function computeTier(points, override) {
+    if (override && override !== '' && override !== 'auto') return override;
+    if (points <= 3) return 'express';
+    if (points <= 15) return 'standard';
+    return 'extended';
+}
+
+var TIER_LABEL = { express: 'Экспресс', standard: 'Стандарт', extended: 'Расширенный' };
+
+function revenuePerHour(cli) {
+    if (!(cli.points > 0) || !(cli.hoursPerDay > 0)) return 0;
+    return cli.revenue / cli.points / 30 / cli.hoursPerDay;
+}
+
+var TCO = {
+    HD_1: function (v, cli) { return (v.HD_1_01 * v.HD_1_07) / 60 * cli.rateIT; },
+    HD_2: function (v, cli) { return v.HD_2_01 * v.HD_2_02 * cli.rateIT; },
+    HD_3: function (v, cli) { return v.HD_3_05; },
+    HD_4: function (v, cli) { return v.HD_4_02 * v.HD_4_05 * cli.rateIT + (cli.staff * v.HD_4_04) * v.HD_4_06 * cli.rateIT; },
+    C1_2: function (v, cli) { return ((v.C1_2_05 * v.C1_2_06 * cli.rate1C) + (v.C1_2_07 * revenuePerHour(cli))) / 12; },
+    C1_3: function (v, cli) { return v.C1_3_05 * cli.rate1C; },
+    C1_4: function (v, cli) { return v.C1_4_03 * v.C1_4_04 * cli.rate1C; },
+    C1_5: function (v, cli) { return v.C1_5_02 / 12; },
+    C1_6: function (v, cli) { return v.C1_6_01 * v.C1_6_02 / 60 * cli.rate1C; },
+    KKT_1: function (v, cli) { return (v.KKT_1_04 * (v.KKT_1_05 + v.KKT_1_06 * cli.rateIT)) / 12; },
+    KKT_2: function (v, cli) { return (v.KKT_2_02 * v.KKT_1_01) + (v.KKT_2_03 * v.KKT_2_04 * cli.rateIT) / 12 + (v.KKT_2_05 / 12); },
+    KKT_3: function (v, cli) { return v.KKT_3_03 * v.KKT_3_04 * cli.rateIT + v.KKT_3_03 * v.KKT_3_04 * revenuePerHour(cli); },
+    KKT_4: function (v, cli) { return v.KKT_4_03 * (v.KKT_4_04 + v.KKT_4_05 * cli.rateIT); },
+    KKT_5: function (v, cli) { return (v.KKT_5_04 * v.KKT_5_03 + v.KKT_5_04 * v.KKT_5_02 * revenuePerHour(cli)) / 12; },
+    KKT_6: function (v, cli) { return (v.KKT_6_01 * v.KKT_6_03 * cli.rateIT) / 12; },
+    MARK_2: function (v, cli) { return v.MARK_2_02 * v.MARK_2_03 + v.MARK_2_04 * v.MARK_2_05 * cli.rateIT; },
+    MARK_3: function (v, cli) { return v.MARK_3_01 * v.MARK_3_02 / 60 * cli.rateIT + v.MARK_3_03 / 12; },
+    MARK_4: function (v, cli) { return v.MARK_4_01 * v.MARK_4_03 / 60 * cli.rateIT; },
+    INFRA_1: function (v, cli) { return v.INFRA_1_03 * v.INFRA_1_05 * cli.rateIT; },
+    INFRA_2: function (v, cli) { return v.INFRA_2_03 * v.INFRA_2_04 * cli.rateIT + v.INFRA_2_03 * v.INFRA_2_04 * revenuePerHour(cli); },
+    INFRA_3: function (v, cli) { return (v.INFRA_3_04 * v.INFRA_3_05 * revenuePerHour(cli)) / 12; },
+    INFRA_4: function (v, cli) { return (v.INFRA_4_04 / 12) + (v.INFRA_4_02 * v.INFRA_4_05 * cli.rateIT) / 12 + (v.INFRA_4_06 / 12); },
+    INFRA_5: function (v, cli) { return v.INFRA_5_03 / 12; },
+    INFRA_6: function (v, cli) { return (v.INFRA_6_06 * cli.rateIT) + (v.INFRA_6_04 / 12); }
+};
+
+var TARIFF = {
+    HD_1: { rate: 700, unit:'руб. за одно обращение', volume: function (v) { return v.HD_1_01; } },
+    HD_2: { rate: 400, unit:'руб. за заявку на доступ', volume: function (v) { return v.HD_2_01; } },
+    HD_3: { rate: 1500, unit:'руб. за магазин в месяц', volume: function (v, cli) { return cli.points; } },
+    HD_4: { rate: 4000, unit:'руб. за занятие', volume: function (v) { return v.HD_4_02 / 12; } },
+    C1_1: { rate: 3500, unit:'руб. за базу в месяц', volume: function (v) { return v.C1_1_02; } },
+    C1_2: { rate: 6000, unit:'руб. за обновление', volume: function (v) { return v.C1_2_05 / 12; } },
+    C1_3: { rate: 1200, unit:'руб. за пользователя в месяц', volume: function (v) { return v.C1_3_01; } },
+    C1_4: { rate: 2500, unit:'руб. за один обмен в месяц', volume: function (v) { return v.C1_4_05; } },
+    C1_6: { rate: 800, unit:'руб. за консультацию', volume: function (v) { return v.C1_6_01; } },
+    KKT_1: { rate: 500, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
+    KKT_2: { rate: 300, unit:'руб. за кассу в месяц', volume: function (v) { return v.KKT_1_01; } },
+    KKT_3: { rate: 400, unit:'руб. за терминал в месяц', volume: function (v) { return v.KKT_3_05; } },
+    KKT_4: { rate: 350, unit:'руб. за единицу в месяц', volume: function (v) { return v.KKT_4_01; } },
+    KKT_5: { rate: 1000, unit:'руб. за выезд', volume: function (v) { return v.KKT_5_04 / 12; } },
+    KKT_6: { rate: 1500, unit:'руб. за регистрацию', volume: function (v) { return v.KKT_6_01 / 12; } },
+    MARK_2: { rate: 10, unit:'руб. за документ', volume: function (v) { return v.MARK_2_03; } },
+    MARK_3: { rate: 600, unit:'руб. за случай', volume: function (v) { return v.MARK_3_01; } },
+    MARK_4: { rate: 2500, unit:'руб. за консультацию', volume: function (v) { return v.MARK_4_01; } },
+    INFRA_1: { rate: 1000, unit:'руб. за единицу в месяц', volume: function (v) { return v.INFRA_1_01; } },
+    INFRA_2: { rate: 2000, unit:'руб. за магазин в месяц', volume: function (v, cli) { return cli.points; } },
+    INFRA_3: { rate: 3500, unit:'руб. за сервер в месяц', volume: function (v) { return v.INFRA_3_01; } },
+    INFRA_4: { rate: 300, unit:'руб. за рабочее место в месяц', volume: function (v) { return v.INFRA_1_01; } },
+    INFRA_6: { rate: 800, unit:'руб. за объект в месяц', volume: function (v) { return v.INFRA_3_01; } }
+};
+
+var PRODUCTS = {
+    HD: ['HD_1', 'HD_2', 'HD_3', 'HD_4'],
+    C1: ['C1_2', 'C1_3', 'C1_4', 'C1_5', 'C1_6'],
+    KKT: ['KKT_1', 'KKT_2', 'KKT_3', 'KKT_4', 'KKT_5', 'KKT_6'],
+    MARK: ['MARK_2', 'MARK_3', 'MARK_4'],
+    INFRA: ['INFRA_1', 'INFRA_2', 'INFRA_3', 'INFRA_4', 'INFRA_5', 'INFRA_6']
+};
+var SVC_PRODUCTS = {
+    HD: ['HD_1', 'HD_2', 'HD_3', 'HD_4'],
+    C1: ['C1_1', 'C1_2', 'C1_3', 'C1_4', 'C1_6'],
+    KKT: ['KKT_1', 'KKT_2', 'KKT_3', 'KKT_4', 'KKT_5', 'KKT_6'],
+    MARK: ['MARK_2', 'MARK_3', 'MARK_4'],
+    INFRA: ['INFRA_1', 'INFRA_2', 'INFRA_3', 'INFRA_4', 'INFRA_6']
+};
+
+function num(x) { x = parseFloat(x); return isFinite(x) ? x : 0; }
+
+// Заполняет пропуски нулями, чтобы формулы не падали на undefined
+function normalizeValues(raw) {
+    var v = {}, k;
+    for (k in raw) { v[k] = num(raw[k]); }
+    return v;
+}
+
+function computeAll(rawValues, rawCli) {
+    var v = normalizeValues(rawValues);
+    var cli = {
+        points: num(rawCli.CLI_0_02),
+        staff: num(rawCli.CLI_0_04),
+        revenue: num(rawCli.CLI_0_05),
+        rateIT: num(rawCli.CLI_0_11),
+        rate1C: num(rawCli.CLI_0_12),
+        hoursPerDay: num(rawCli.CLI_0_13)
+    };
+    var result = { tco: {}, svc: {}, tcoTotal: {}, svcTotal: {}, v: v, cli: cli };
+    var product;
+    for (product in PRODUCTS) {
+        var sum = 0, i;
+        for (i = 0; i < PRODUCTS[product].length; i++) {
+            var id = PRODUCTS[product][i];
+            var val = TCO[id](v, cli);
+            result.tco[id] = val;
+            sum += val;
+        }
+        result.tcoTotal[product] = sum;
+    }
+    for (product in SVC_PRODUCTS) {
+        var sum2 = 0, j;
+        for (j = 0; j < SVC_PRODUCTS[product].length; j++) {
+            var id2 = SVC_PRODUCTS[product][j];
+            var t = TARIFF[id2];
+            var val2 = t.volume(v, cli) * t.rate;
+            result.svc[id2] = val2;
+            sum2 += val2;
+        }
+        result.svcTotal[product] = sum2;
+    }
+    result.grandTco = 0; result.grandSvc = 0;
+    for (product in result.tcoTotal) { result.grandTco += result.tcoTotal[product]; }
+    for (product in result.svcTotal) { result.grandSvc += result.svcTotal[product]; }
+    result.savingsTotal = result.grandTco - result.grandSvc;
+    result.roi = result.grandSvc > 0 ? result.savingsTotal / result.grandSvc : 0;
+
+    result.bottomHD = v.HD_5_02 + v.HD_5_07 * v.HD_5_06;
+    result.bottomC1 = v.C1_7_02 + v.HD_5_07 * (1 - v.HD_5_06);
+    result.c1_7_03 = 1 - v.HD_5_06;
+
+    result.savingsByProduct = {};
+    for (product in result.tcoTotal) {
+        result.savingsByProduct[product] = result.tcoTotal[product] - (result.svcTotal[product] || 0);
+    }
+    result.tier = computeTier(cli.points, rawCli.CLI_0_15);
+    return result;
+}
+/* ============================================================
+   Retail IT Audit — интерфейс: состояние, отрисовка, диаграммы, экспорт.
+   ============================================================ */
+
+var LEGACY_STORAGE_KEY = 'retailAudit_v1';
+var INDEX_KEY = 'retailAudit_index';
+var DATA_PREFIX = 'retailAudit_data_';
+
+var STATE = {
+    step: 'intro',
+    auditId: null,
+    values: {},
+    helpOpen: false
+};
+
+function genId() {
+    return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function getIndex() {
+    try {
+        var raw = localStorage.getItem(INDEX_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+}
+function setIndex(list) {
+    try { localStorage.setItem(INDEX_KEY, JSON.stringify(list)); } catch (e) {}
+}
+
+// Переносит старый черновик (одна запись на весь браузер) в новый список аудитов —
+// чтобы то, что уже было заполнено, не потерялось при переходе на список.
+function migrateLegacyDraft() {
+    var idx = getIndex();
+    if (idx.length > 0) return;
+    try {
+        var raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (!raw) return;
+        var saved = JSON.parse(raw);
+        if (!saved.values || Object.keys(saved.values).length === 0) return;
+        var id = genId();
+        localStorage.setItem(DATA_PREFIX + id, JSON.stringify({ values: saved.values, step: saved.step || 'CLI' }));
+        idx.push({ id: id, name: saved.values.CLI_0_01 || '', points: saved.values.CLI_0_02 || '', updatedAt: Date.now() });
+        setIndex(idx);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch (e) {}
+}
+
+function loadState() {
+    migrateLegacyDraft();
+    STATE.step = 'intro';
+    STATE.auditId = null;
+    STATE.values = {};
+}
+
+function startNewAudit() {
+    STATE.auditId = genId();
+    STATE.values = {};
+    STATE.step = 'CLI';
+    saveState();
+    render();
+    window.scrollTo(0, 0);
+}
+
+function openAudit(id) {
+    try {
+        var raw = localStorage.getItem(DATA_PREFIX + id);
+        if (!raw) return;
+        var saved = JSON.parse(raw);
+        STATE.auditId = id;
+        STATE.values = saved.values || {};
+        STATE.step = saved.step || 'CLI';
+        render();
+        window.scrollTo(0, 0);
+    } catch (e) {}
+}
+
+function deleteAudit(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (!confirm('Удалить этот аудит без возможности восстановления?')) return;
+    try {
+        localStorage.removeItem(DATA_PREFIX + id);
+        setIndex(getIndex().filter(function (a) { return a.id !== id; }));
+    } catch (e) {}
+    render();
+}
+
+function backToLibrary() {
+    STATE.auditId = null;
+    STATE.step = 'intro';
+    render();
+    window.scrollTo(0, 0);
+}
+
+var saveTimer = null;
+function saveState() {
+    if (!STATE.auditId) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+        try {
+            localStorage.setItem(DATA_PREFIX + STATE.auditId, JSON.stringify({ values: STATE.values, step: STATE.step }));
+            var idx = getIndex();
+            var entry = null;
+            for (var i = 0; i < idx.length; i++) { if (idx[i].id === STATE.auditId) { entry = idx[i]; break; } }
+            if (!entry) { entry = { id: STATE.auditId }; idx.unshift(entry); }
+            var nameBase = STATE.values.CLI_0_01 || '';
+            entry.name = (STATE.auditId === EXAMPLE_AUDIT_ID ? 'Пример: ' : '') + nameBase;
+            entry.points = STATE.values.CLI_0_02 || '';
+            entry.updatedAt = Date.now();
+            setIndex(idx);
+            var ind = document.getElementById('saveIndicator');
+            if (ind) {
+                ind.textContent = 'Черновик сохранён';
+                ind.classList.add('show');
+                setTimeout(function () { ind.classList.remove('show'); }, 1500);
+            }
+        } catch (e) { /* тихо игнорируем — не критично для работы формы */ }
+    }, 400);
+}
+
+function fmtMoney(n) {
+    n = Math.round(n || 0);
+    var neg = n < 0; n = Math.abs(n);
+    var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return (neg ? '−' : '') + s + ' ₽';
+}
+function fmtNum(n) {
+    n = Math.round((n || 0) * 10) / 10;
+    return String(n).replace('.', ',');
+}
+function fmtPercent(x) {
+    return Math.round((x || 0) * 100) + '%';
+}
+
+// ---------- Порядок шагов мастера ----------
+var PRODUCT_STEPS = ['HD', 'C1', 'KKT', 'MARK', 'INFRA'];
+var STEP_ORDER = ['intro', 'CLI'].concat(PRODUCT_STEPS).concat(['tariffs', 'results']);
+
+function blocksForStep(step) {
+    if (step === 'CLI') return BLOCKS.filter(function (b) { return b.product === 'CLI'; });
+    return BLOCKS.filter(function (b) { return b.product === step; });
+}
+
+function currentTier() {
+    return computeTier(num(STATE.values.CLI_0_02), STATE.values.CLI_0_15);
+}
+
+function isBlockCollapsedByDefault(block) {
+    if (block.tier !== 'optional') return false;
+    var tier = currentTier();
+    return tier === 'express';
+}
+
+// ---------- Проверка заполненности ----------
+function isFieldEmpty(f) {
+    var val = STATE.values[f.id];
+    return val === undefined || val === null || val === '';
+}
+function isFieldMissing(f) {
+    return !!f.required && isFieldEmpty(f);
+}
+function missingRequiredFields(blocks) {
+    var out = [];
+    blocks.forEach(function (b) {
+        b.fields.forEach(function (f) {
+            if (isFieldMissing(f)) out.push(f);
+        });
+    });
+    return out;
+}
+
+// ---------- Отрисовка поля ----------
+function renderField(f) {
+    var val = STATE.values[f.id];
+    var missing = isFieldMissing(f);
+    var reqMark = f.required ? '<span class="field-required" title="Нужно для расчёта">*</span>' : '';
+    var hint = f.hint ? '<div class="field-hint">' + escapeHtml(f.hint) + '</div>' : '';
+    var input = '';
+    if (f.type === 'N' || f.type === 'P') {
+        var v2 = (val === undefined || val === null) ? '' : val;
+        var suffix = f.type === 'P' ? '<span class="field-suffix">%</span>' : '';
+        input = '<div class="field-input-wrap"><input class="field-input" type="number" inputmode="decimal" ' +
+            'data-field="' + f.id + '" value="' + escapeAttr(v2) + '" placeholder="0">' + suffix + '</div>';
+    } else if (f.type === 'D') {
+        var y = val === 'yes' ? ' selected' : '';
+        var n2 = val === 'no' ? ' selected' : '';
+        input = '<select class="field-input" data-field="' + f.id + '">' +
+            '<option value=""' + (val ? '' : ' selected') + '>— выберите —</option>' +
+            '<option value="yes"' + y + '>Да</option>' +
+            '<option value="no"' + n2 + '>Нет</option></select>';
+    } else if (f.type === 'SELECT') {
+        var opts = f.options.map(function (o) {
+            var sel = (val === o[0]) || (!val && o[0] === 'auto') ? ' selected' : '';
+            return '<option value="' + o[0] + '"' + sel + '>' + escapeHtml(o[1]) + '</option>';
+        }).join('');
+        input = '<select class="field-input" data-field="' + f.id + '">' + opts + '</select>';
+    } else {
+        var vt = val === undefined || val === null ? '' : val;
+        input = '<input class="field-input" type="text" data-field="' + f.id + '" value="' + escapeAttr(vt) + '">';
+    }
+    return '<label class="field' + (missing ? ' field-missing' : '') + '" data-field-wrap="' + f.id + '">' +
+        '<span class="field-label">' + escapeHtml(f.label) + reqMark + '</span>' +
+        input + hint +
+        '</label>';
+}
+
+var TIER_BADGE = {
+    must: { text: 'Всегда заполняем', cls: 'badge-must' },
+    partial: { text: 'На малых сетях — частично', cls: 'badge-partial' },
+    situational: { text: 'Если применимо у клиента', cls: 'badge-situational' },
+    optional: { text: 'Можно пропустить на маленькой сети', cls: 'badge-optional' }
+};
+
+function renderBlock(block) {
+    var badge = TIER_BADGE[block.tier] || TIER_BADGE.must;
+    var collapsed = isBlockCollapsedByDefault(block);
+    var note = block.note ? '<div class="block-note">' + escapeHtml(block.note) + '</div>' : '';
+    var coreFields = block.fields.filter(function (f) { return !!f.required; });
+    var extraFields = block.fields.filter(function (f) { return !f.required; });
+    var coreHtml = coreFields.map(renderField).join('');
+    var extraHtml = extraFields.length
+        ? '<details class="extra-fields"><summary>Ещё ' + extraFields.length + ' необязательных вопроса(ов) для контекста</summary>' +
+          extraFields.map(renderField).join('') + '</details>'
+        : '';
+    return '<details class="block-card" data-block="' + block.id + '"' + (collapsed ? '' : ' open') + '>' +
+        '<summary class="block-summary">' +
+            '<span class="block-title">' + escapeHtml(block.title) + '</span>' +
+            '<span class="badge ' + badge.cls + '">' + badge.text + '</span>' +
+        '</summary>' +
+        '<div class="block-body">' + note + coreHtml + extraHtml + '</div>' +
+        '</details>';
+}
+
+function renderProductStep(product) {
+    var meta = PRODUCT_META[product];
+    var blocks = blocksForStep(product);
+    var tier = currentTier();
+    var tierNote = tier === 'express'
+        ? '<div class="tier-hint">Уровень аудита: <b>Экспресс</b> — часть блоков ниже свёрнута, их можно пропустить, если это не применимо у клиента. Если применимо (например, у маленькой сети всё равно есть сложная маркировка) — разверните и заполните, это реальные деньги.</div>'
+        : '';
+    return '<div class="step-header" style="--accent:' + meta.hue + '">' +
+        '<div class="step-eyebrow">Продукт</div>' +
+        '<h2>' + escapeHtml(meta.name) + '</h2>' +
+        '</div>' + tierNote +
+        '<div class="blocks">' + blocks.map(renderBlock).join('') + '</div>';
+}
+
+function renderProfileStep() {
+    var blocks = blocksForStep('CLI');
+    var tier = currentTier();
+    var tierBox = '<div class="tier-result">' +
+        '<div class="tier-result-label">Уровень аудита (считается сам, по числу магазинов)</div>' +
+        '<div class="tier-result-value">' + TIER_LABEL[tier] + '</div>' +
+        '<div class="tier-result-explain">' + tierExplain(tier) + '</div>' +
+        '</div>';
+    return '<div class="step-header" style="--accent:#2A78D6">' +
+        '<div class="step-eyebrow">Начало</div><h2>Профиль клиента</h2></div>' +
+        '<div class="blocks">' + blocks.map(renderBlock).join('') + '</div>' +
+        tierBox;
+}
+
+function tierExplain(tier) {
+    if (tier === 'express') return 'До 3 магазинов — обычно нет своего ИТ-отдела. Спрашиваем только самое важное, без лишней детализации.';
+    if (tier === 'standard') return '4–15 магазинов — обычно уже есть 1–3 своих айтишника. Заполняем почти весь чек-лист.';
+    return '16 и больше магазинов — обычно есть целый ИТ-отдел. Заполняем чек-лист полностью.';
+}
+
+// ---------- Тарифы (только просмотр) ----------
+function renderTariffsStep() {
+    var rows = [];
+    var order = ['HD_1','HD_2','HD_3','HD_4','C1_1','C1_2','C1_3','C1_4','C1_6','KKT_1','KKT_2','KKT_3','KKT_4','KKT_5','KKT_6','MARK_2','MARK_3','MARK_4','INFRA_1','INFRA_2','INFRA_3','INFRA_4','INFRA_6'];
+    var titleOf = {};
+    BLOCKS.forEach(function (b) { titleOf[b.id] = b.title; });
+    order.forEach(function (id) {
+        var t = TARIFF[id];
+        var hue = PRODUCT_META[id.split('_')[0] === '1' ? 'C1' : id.replace(/_\d+$/, '')] ;
+        rows.push('<tr><td>' + escapeHtml(titleOf[id] || id) + '</td><td class="num">' + fmtMoney(t.rate) + '</td><td class="muted">' + escapeHtml(t.unit) + '</td></tr>');
+    });
+    return '<div class="step-header" style="--accent:#2A78D6"><div class="step-eyebrow">Цены</div><h2>Наши тарифы</h2></div>' +
+        '<p class="lead">Это тарифы Айти-Консалтинг — они настроены централизованно, на выезде их менять не нужно. ' +
+        'Здесь только для справки: ниже автоматически посчитается стоимость услуг по этим тарифам и объёмам, которые вы внесли на предыдущих шагах.</p>' +
+        '<div class="table-wrap"><table class="tariff-table"><thead><tr><th>Услуга</th><th>Тариф</th><th>Единица</th></tr></thead><tbody>' +
+        rows.join('') + '</tbody></table></div>' +
+        '<p class="muted small">Черновые рыночные цены на первом этапе — финальные цифры появятся после расчёта себестоимости Айти-Консалтинг.</p>';
+}
+
+// ---------- Результаты ----------
+var AUDIENCE_PAIN = [
+    { key:'owner', title:'Собственнику', text:'Деньги на ИТ уходили непонятно куда, о проблемах узнавали последними. Главное: сколько реально сэкономим за год, во сколько раз окупятся траты, и что мы берём под контроль riски (штрафы, простои), которые раньше были невидимы.' },
+    { key:'ops', title:'Операционному директору', text:'Магазины простаивали, а директора магазинов тратили время на решение компьютерных проблем вместо продаж. Главное: сколько часов простоя было и сколько будет, и что нагрузка с персонала точек снимается.' },
+    { key:'fin', title:'Финансовому директору', text:'Расходы на ИТ размазаны по разным статьям и непредсказуемы. Главное: понятная структура "было / станет" по каждой статье и фиксированная предсказуемая цена вместо случайных счетов.' },
+    { key:'it', title:'ИТ-директору клиента', text:'Внимание: не подавайте это как "экономию на зарплатах" — для ИТ-директора это разговор про то, что рутина (заявки пользователей, обслуживание касс) уходит с его команды, и она может заняться более сложными задачами, а не про сокращение его отдела.' }
+];
+
+function renderResultsStep(r) {
+    var html = '<div class="step-header" style="--accent:#2A78D6"><div class="step-eyebrow">Итог</div><h2>Результаты аудита</h2></div>';
+
+    if (r.grandTco === 0 && r.grandSvc === 0) {
+        html += '<div class="warn-card warn-card-big">' +
+            '<div class="warn-title">Чек-лист похоже не заполнен — обе суммы получились нулевыми</div>' +
+            '<p>Это не настоящий результат, а признак того, что данные ещё не внесены. Вернитесь к шагам с вопросами и заполните хотя бы профиль клиента и объёмы по каждому продукту.</p>' +
+            '<button class="btn" onclick="goToStep(\'CLI\')">Вернуться к профилю клиента</button>' +
+            '</div>';
+    }
+
+    html += '<div class="tiles">';
+    html += statTile('Сколько сейчас стоит клиенту его ИТ', fmtMoney(r.grandTco), 'в месяц', null);
+    html += statTile('Сколько будут стоить наши услуги', fmtMoney(r.grandSvc), 'в месяц', 'accent');
+    html += statTile('Экономия клиента', fmtMoney(r.savingsTotal), 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad');
+    html += '</div>';
+    html += '<div class="tiles">';
+    html += statTile('Экономия за год', fmtMoney(r.savingsTotal * 12), '', r.savingsTotal >= 0 ? 'good' : 'bad');
+    html += statTile('Насколько выгодно', fmtPercent(r.roi), 'экономия к цене наших услуг', r.roi >= 0 ? 'good' : 'bad');
+    html += statTile('Уровень аудита', TIER_LABEL[r.tier], 'насколько подробно опрашивали клиента', null);
+    html += '</div>';
+
+    html += '<div class="assumptions-note">' +
+        'Расчёт выше сделан исходя из того, что час работы айтишника у этого клиента стоит <b>' + fmtMoney(r.cli.rateIT) + '</b>, ' +
+        'а час работы специалиста по 1С — <b>' + fmtMoney(r.cli.rate1C) + '</b>. Это не оклад по договору, а полная стоимость часа (оклад + налоги, делённые на норму часов). ' +
+        'Если эти цифры оценочные (клиент не смог назвать точно) — весь расчёт настолько же оценочный, и стоит это проговорить, показывая отчёт. Поменять цифры можно на шаге "Профиль клиента".' +
+        '</div>';
+
+    html += '<h3 class="section-title">Экономия по каждому направлению, в месяц</h3>';
+    html += barChart(r.savingsByProduct);
+
+    html += '<h3 class="section-title">Сколько стоит сейчас и сколько будет стоить у нас</h3>';
+    html += compareChart(r.tcoTotal, r.svcTotal);
+
+    html += '<div class="bottom-check">' +
+        '<h3 class="section-title">Сверка по зарплатам — проверка, что расчёт не ошибся</h3>' +
+        '<p class="muted small">Расчёт выше посчитан "сверху": по количеству обращений, заявок, поломок и т.д. Ниже — та же стоимость, но посчитанная другим способом, "снизу": сколько сейчас реально платят сотрудникам, которые этим занимаются (зарплата + налоги). Это не отдельная статья расходов и не прибавляется к итогу — это просто вторая проверка одной и той же цифры. Если два способа дают близкие числа — данные, скорее всего, собраны верно. Если разошлись сильно (в 2 раза и больше, как может быть в примере) — стоит переспросить у клиента, не занижена ли/завышена ли одна из цифр.</p>' +
+        '<div class="tiles">' +
+        statTile('Служба поддержки, по зарплатам', fmtMoney(r.bottomHD), 'в месяц', null) +
+        statTile('Сопровождение 1С, по зарплатам', fmtMoney(r.bottomC1), 'в месяц', null) +
+        '</div></div>';
+
+    html += '<h3 class="section-title">Отчёт для клиента</h3>';
+    html += '<p class="lead">Ниже — заготовка отчёта под каждого получателя. При показе клиенту оставьте только тот раздел, который относится к тому, кто будет читать отчёт (это указано в профиле клиента).</p>';
+    html += '<div class="pain-blocks">' + AUDIENCE_PAIN.map(function (p) {
+        return '<div class="pain-card"><div class="pain-title">' + p.title + '</div><div class="pain-text">' + p.text + '</div></div>';
+    }).join('') + '</div>';
+
+    html += '<div class="price-summary">Текущие расходы клиента: <b>' + fmtMoney(r.grandTco) + '</b> в месяц. ' +
+        'Наши услуги: <b>' + fmtMoney(r.grandSvc) + '</b> в месяц. Экономия: <b>' + fmtMoney(r.savingsTotal) + '</b> в месяц (' + fmtPercent(r.roi) + ').</div>';
+
+    html += '<div class="actions-row no-print">' +
+        '<button class="btn" onclick="exportJson()">Скачать все данные (файл)</button>' +
+        '<button class="btn btn-outline" onclick="window.print()">Распечатать / сохранить как PDF</button>' +
+        '</div>';
+
+    return html;
+}
+
+function statTile(label, value, sub, tone) {
+    var cls = 'tile' + (tone ? ' tile-' + tone : '');
+    return '<div class="' + cls + '"><div class="tile-label">' + escapeHtml(label) + '</div>' +
+        '<div class="tile-value">' + value + '</div>' +
+        (sub ? '<div class="tile-sub">' + escapeHtml(sub) + '</div>' : '') + '</div>';
+}
+
+// ---------- Диаграммы (инлайн SVG) ----------
+// Короткие названия для диаграмм — длинные ("Служба поддержки пользователей") не влезают
+// в подпись слева и обрезаются, полное название остаётся везде в тексте вопросов.
+var CHART_SHORT_NAME = { HD: 'Поддержка', C1: '1С', KKT: 'Кассы', MARK: 'Маркировка', INFRA: 'Компьютеры/сеть' };
+
+function barChart(byProduct) {
+    var order = ['HD','C1','KKT','MARK','INFRA'];
+    var items = order.map(function (p) { return { name: CHART_SHORT_NAME[p], val: byProduct[p] || 0 }; });
+    var max = Math.max.apply(null, items.map(function (i) { return Math.abs(i.val); }).concat([1]));
+    var w = 640, rowH = 40, padL = 190, padR = 70, h = items.length * rowH + 20;
+    var midX = padL + (w - padL - padR) / 2;
+    var scale = (w - padL - padR) / 2 / max;
+    var bars = items.map(function (item, i) {
+        var y = 16 + i * rowH;
+        var barW = Math.abs(item.val) * scale;
+        var x = item.val >= 0 ? midX : midX - barW;
+        var color = item.val >= 0 ? 'var(--good)' : 'var(--bad)';
+        return '<text x="' + (padL - 12) + '" y="' + (y + 14) + '" text-anchor="end" class="chart-label">' + escapeHtml(item.name) + '</text>' +
+            '<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + Math.max(barW, 1).toFixed(1) + '" height="20" rx="4" fill="' + color + '"></rect>' +
+            '<text x="' + (item.val >= 0 ? x + barW + 8 : x - 8) + '" y="' + (y + 14) + '" text-anchor="' + (item.val >= 0 ? 'start' : 'end') + '" class="chart-value">' + fmtMoney(item.val) + '</text>';
+    }).join('');
+    return '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Экономия по продуктам">' +
+        '<line x1="' + midX + '" y1="8" x2="' + midX + '" y2="' + (h - 8) + '" class="chart-axis"></line>' +
+        bars + '</svg>';
+}
+
+function compareChart(tco, svc) {
+    var order = ['HD','C1','KKT','MARK','INFRA'];
+    var items = order.map(function (p) { return { name: CHART_SHORT_NAME[p], tco: tco[p] || 0, svc: svc[p] || 0 }; });
+    var max = Math.max.apply(null, items.map(function (i) { return Math.max(i.tco, i.svc); }).concat([1]));
+    var w = 640, rowH = 56, padL = 190, padR = 20, h = items.length * rowH + 20;
+    var scale = (w - padL - padR) / max;
+    var bars = items.map(function (item, i) {
+        var y = 12 + i * rowH;
+        var w1 = item.tco * scale, w2 = item.svc * scale;
+        return '<text x="' + (padL - 12) + '" y="' + (y + 22) + '" text-anchor="end" class="chart-label">' + escapeHtml(item.name) + '</text>' +
+            '<rect x="' + padL + '" y="' + y + '" width="' + Math.max(w1,1).toFixed(1) + '" height="16" rx="3" fill="var(--muted-ink)"></rect>' +
+            '<text x="' + (padL + w1 + 8) + '" y="' + (y + 13) + '" class="chart-value-sm">' + fmtMoney(item.tco) + '</text>' +
+            '<rect x="' + padL + '" y="' + (y + 20) + '" width="' + Math.max(w2,1).toFixed(1) + '" height="16" rx="3" fill="var(--brand)"></rect>' +
+            '<text x="' + (padL + w2 + 8) + '" y="' + (y + 33) + '" class="chart-value-sm">' + fmtMoney(item.svc) + '</text>';
+    }).join('');
+    return '<div class="chart-legend"><span><i class="dot" style="background:var(--muted-ink)"></i>Сейчас у клиента</span><span><i class="dot" style="background:var(--brand)"></i>С нами</span></div>' +
+        '<svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Сравнение текущей стоимости и стоимости услуг">' + bars + '</svg>';
+}
+
+// ---------- Экспорт ----------
+function exportJson() {
+    var data = { savedAt: new Date().toISOString(), values: STATE.values };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'audit-' + (STATE.values.CLI_0_01 || 'клиент').replace(/[^a-zA-Zа-яА-Я0-9]+/g, '_') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function escapeHtml(s) {
+    s = (s === undefined || s === null) ? '' : String(s);
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function escapeAttr(s) {
+    return escapeHtml(s).replace(/"/g, '&quot;');
+}
+/* Инструкция — упрощённый пересказ, без английских сокращений */
+HELP_HTML =
+'<h3>Что это за инструмент</h3>' +
+'<p>Вы приезжаете к клиенту и по порядку отвечаете на вопросы про пять направлений: служба поддержки, 1С, кассы, маркировка, компьютеры и сеть. ' +
+'Дальше инструмент сам считает: сколько клиент тратит на ИТ сейчас, сколько будут стоить наши услуги, какая получится экономия и через сколько месяцев ' +
+'она окупит расходы на переход. Ваша задача — точно и полно собрать ответы, остальное инструмент посчитает сам.</p>' +
+
+'<h3>Шаг 1. Профиль клиента</h3>' +
+'<p>Всегда начинайте отсюда. Здесь — название сети, сколько магазинов, сколько всего сотрудников, сколько сеть зарабатывает, есть ли свои айтишники. ' +
+'Отдельно уточните две цифры — сколько стоит час работы айтишника и час работы специалиста по 1С у этого клиента. Это не оклад по договору, а полная ' +
+'стоимость часа: (оклад + налоги) ÷ норму часов. Эту цифру лучше спросить у бухгалтера клиента — без неё почти ничего не посчитается дальше.</p>' +
+
+'<h3>Шаг 2. Уровень аудита</h3>' +
+'<p>Инструмент сам определяет, насколько подробно нужно всё расспрашивать, по числу магазинов:</p>' +
+'<p><b>Экспресс</b> — до 3 магазинов. Обычно своих айтишников ещё нет, всем занимается 1–2 человека по совместительству. Спрашиваем только самое важное.<br>' +
+'<b>Стандарт</b> — от 4 до 15 магазинов. Обычно уже есть 1–3 своих специалиста. Спрашиваем почти всё.<br>' +
+'<b>Расширенный</b> — от 16 магазинов. Обычно есть целый отдел. Спрашиваем всё подробно.</p>' +
+'<p>Не нужно всегда специально ставить "Расширенный" — чем выше уровень, тем больше вопросов и времени на выезде, часть из них для маленького клиента ' +
+'просто не имеет смысла. Изменить уровень вручную можно, но только если видите, что клиент реально сложнее или проще, чем показывает число магазинов, ' +
+'и обязательно нужно написать, почему — без этого система не даст сохранить изменение.</p>' +
+
+'<h3>Шаг 3. Вопросы по пяти направлениям</h3>' +
+'<p>Дальше идёте по порядку: служба поддержки, 1С, кассы, маркировка, компьютеры и сеть. Часть блоков помечена "можно пропустить на маленькой сети" — ' +
+'если у клиента это направление реально есть (например, у маленькой сети всё равно бывает сложная маркировка), лучше развернуть и заполнить — это ' +
+'реальные деньги, которые не стоит терять только из-за того, что сеть небольшая.</p>' +
+'<p>Отдельно обратите внимание на блоки "Кто сейчас занимается поддержкой" и "Кто сейчас занимается 1С" — это не лишние вопросы, а проверка тех же ' +
+'цифр другим способом: не по количеству обращений, а по реальным зарплатам сотрудников клиента. Если обе цифры получаются близко — данные собраны верно. ' +
+'Если сильно расходятся — стоит переспросить у клиента, а не брать первую попавшуюся.</p>' +
+'<p>Если у клиента есть сотрудник, который одновременно занимается и поддержкой пользователей, и 1С — не делите его зарплату сами. Спросите у ' +
+'руководителя клиента, сколько процентов своего времени в неделю он тратит именно на поддержку пользователей — остальное инструмент посчитает сам.</p>' +
+
+'<h3>Шаг 4. Наши тарифы</h3>' +
+'<p>Тарифы уже настроены заранее — трогать их на выезде не нужно. Достаточно верно внести количество (обращений, касс, пользователей и т.д.) на предыдущих шагах — ' +
+'стоимость посчитается сама.</p>' +
+
+'<h3>Шаг 5. Результат</h3>' +
+'<p>В конце — сколько клиент тратит сейчас, сколько будет стоить с нами, экономия в месяц и в год, и насколько это выгодно в процентах. Ниже — заготовка ' +
+'отчёта под разных людей у клиента (собственник, операционный директор, финансовый директор, ИТ-директор) — у каждого свой главный вопрос, и при показе ' +
+'клиенту стоит оставить только тот раздел, который относится к тому, кто будет читать отчёт.</p>' +
+
+'<h3>Если что-то непонятно на месте</h3>' +
+'<p>Не знают стоимость часа специалиста — спросите расчётный лист по зарплате у бухгалтера, а не берите оклад "как есть". Если и это недоступно сразу — ' +
+'внесите примерную оценку, это лучше, чем пустое поле, уточнить можно и позже.</p>' +
+'<p>Клиент не хочет прямо говорить про штраф или проблему — не давите. Рядом почти всегда есть более мягкий вопрос ("были ли проверки" вместо "были ли ' +
+'штрафы") — на него отвечают охотнее. Если на мягкий вопрос ответ "да", а на прямой — "нет", стоит переспросить ещё раз.</p>' +
+'<p>Не помнят точных цифр — берите оценку "на глаз" от сотрудника клиента, который в теме, а не придумывайте сами.</p>' +
+
+'<h3>Как сохранить и передать результат</h3>' +
+'<p>Всё сохраняется в этом браузере автоматически по ходу заполнения — специально нажимать ничего не нужно. Не работайте в приватном/анонимном окне ' +
+'браузера и не очищайте историю до конца работы с клиентом, иначе черновик пропадёт.</p>' +
+'<p>Кнопка "Скачать все данные" сохраняет файл с ответами на компьютер — его можно передать в офис или открыть позже на другом компьютере. ' +
+'Кнопка "Распечатать" сохраняет отчёт как файл для чтения (PDF) обычной функцией браузера — ничего дополнительно устанавливать не нужно.</p>' +
+
+'<h3>Частые ошибки</h3>' +
+'<p><b>Путают службу поддержки и вопрос по 1С.</b> Если вопрос решается в пределах часа и это базовый функционал программы — то, что входит в ' +
+'обычную линию консультаций по ИТС — это служба поддержки. Если нужно менять настройки программы (например, права и роли) или разбираться в ' +
+'методологии учёта — это раздел "1С".</p>' +
+'<p><b>Меняют уровень аудита вручную без причины.</b> Система это заблокирует, но не пишите отписку для галочки — причина должна быть настоящей.</p>' +
+'<p><b>Пропускают блоки "можно пропустить" целиком, хотя они применимы у клиента.</b> Так теряется реальная выручка.</p>' +
+'<p><b>Берут оклад по договору вместо полной стоимости часа</b> (оклад + налоги, делённые на часы) — это искажает все расчёты дальше.</p>' +
+'<p><b>Игнорируют большое расхождение</b> между расчётом по обращениям и расчётом по зарплатам в блоках "Кто сейчас занимается…" — лучше разобраться на месте, пока клиент рядом.</p>';
+/* Готовый пример — сеть "Гардения", 9 магазинов женской одежды, Новосибирск.
+   Нужен, чтобы сразу увидеть, как выглядит результат на полностью заполненных данных,
+   не вводя вручную 75+ чисел. Числа продуманы так, чтобы быть внутренне согласованными
+   (штат, обороты, часовые ставки, объёмы обращений — пропорциональны размеру сети). */
+var EXAMPLE_DATA = {
+  CLI_0_01: "Гардения", CLI_0_02: 9, CLI_0_03: "Новосибирск и Новосибирская область (5 городов)",
+  CLI_0_04: 68, CLI_0_05: 19500000,
+  CLI_0_06: "Да, есть системный администратор в штате и приходящий специалист по 1С",
+  CLI_0_07: "Свои сотрудники, частично — сторонний специалист по 1С",
+  CLI_0_08: "Коммерческий директор", CLI_0_09: "Собственник, коммерческий директор, финансовый директор",
+  CLI_0_11: 450, CLI_0_12: 600, CLI_0_13: 12, CLI_0_15: "auto", CLI_0_16: "",
+
+  HD_1_01: 140, HD_1_02: "Не работает касса, зависла программа, забыл пароль, вопрос как сделать возврат",
+  HD_1_03: 9, HD_1_04: 68, HD_1_05: "Звонок или сообщение в мессенджере",
+  HD_1_06: "Нет, специальной программы нет, ведут в общем чате", HD_1_07: 20,
+
+  HD_2_01: 18, HD_2_02: 0.5, HD_2_03: "no", HD_2_04: "Коммерческий директор",
+  HD_2_05: "Вручную, на каждую программу отдельно",
+
+  HD_3_01: "yes", HD_3_02: "Устно обещают приехать за 3-4 часа", HD_3_03: "1-2 дня",
+  HD_3_04: 0.65, HD_3_05: 60000, HD_3_06: 5,
+
+  HD_4_01: "yes", HD_4_02: 10, HD_4_03: "Директор магазина показывает на месте",
+  HD_4_04: 0.4, HD_4_05: 2, HD_4_06: 1,
+
+  HD_5_01: 1.5, HD_5_02: 48000, HD_5_03: 0.05, HD_5_04: "yes",
+  HD_5_05: "Сергей, системный администратор", HD_5_06: 0.6, HD_5_07: 85000,
+
+  C1_1_01: "1С:Розница 2.3, 1С:Управление торговлей 11.5", C1_1_02: 3,
+  C1_1_03: "Работает на общем сервере в офисе, магазины подключаются удалённо",
+  C1_1_04: "Да, дорабатывали печатные формы и обмен с кассами", C1_1_05: "3 месяца назад",
+
+  C1_2_01: "Раз в квартал", C1_2_02: "no", C1_2_03: "Да, ночью делаются резервные копии",
+  C1_2_04: 3, C1_2_05: 4, C1_2_06: 3, C1_2_07: 18,
+
+  C1_3_01: 12, C1_3_02: "no", C1_3_03: "Не пересматривали ни разу", C1_3_04: 12, C1_3_05: 2,
+
+  C1_4_01: "Кассы, банк-клиент, ЭДО, Честный знак",
+  C1_4_02: "Стандартный обмен, немного дорабатывали под себя", C1_4_03: 2, C1_4_04: 2, C1_4_05: 4,
+
+  C1_5_01: "Подписка 1С:Фреш", C1_5_02: 180000, C1_5_03: "Действует, продление в декабре",
+
+  C1_6_01: 25, C1_6_02: 40,
+  C1_7_01: 1.2, C1_7_02: 65000,
+
+  KKT_1_01: 14, KKT_1_02: 3, KKT_1_03: "Через 8 месяцев", KKT_1_04: 5, KKT_1_05: 9000, KKT_1_06: 2,
+
+  KKT_2_01: "Платформа ОФД", KKT_2_02: 350, KKT_2_03: 4, KKT_2_04: 1.5, KKT_2_05: 15000,
+  KKT_2_06: "Да, одна проверка по жалобе покупателя",
+
+  KKT_3_01: "Сбербанк", KKT_3_02: "Отдельное устройство", KKT_3_03: 3, KKT_3_04: 1, KKT_3_05: 14,
+
+  KKT_4_01: 20, KKT_4_02: 4, KKT_4_03: 3, KKT_4_04: 4500, KKT_4_05: 1.5,
+
+  KKT_5_01: "Сторонняя сервисная фирма по обслуживанию касс", KKT_5_02: 5, KKT_5_03: 2500, KKT_5_04: 22,
+
+  KKT_6_01: 2, KKT_6_02: "Та же сторонняя фирма", KKT_6_03: 3,
+
+  MARK_1_01: "Верхняя одежда (пальто, куртки, трикотаж)", MARK_1_02: 0.45, MARK_1_03: 1800,
+
+  MARK_2_01: "Оператор ЭДО Такском", MARK_2_02: 12, MARK_2_03: 220, MARK_2_04: 4, MARK_2_05: 1,
+
+  MARK_3_01: 15, MARK_3_02: 15, MARK_3_03: 30000,
+  MARK_3_04: "Да, одна проверка Роспотребнадзора, без последствий",
+
+  MARK_4_01: 8, MARK_4_02: "yes", MARK_4_03: 20,
+
+  INFRA_1_01: 45, INFRA_1_02: 4, INFRA_1_03: 12, INFRA_1_04: "no", INFRA_1_05: 1.5,
+
+  INFRA_2_01: 18, INFRA_2_02: "Нет, обычный интернет-провайдер в каждом магазине",
+  INFRA_2_03: 6, INFRA_2_04: 2,
+
+  INFRA_3_01: 1, INFRA_3_02: "Да, файловое хранилище на 4 ТБ",
+  INFRA_3_03: "Серверу 5 лет, замена не планируется", INFRA_3_04: 2, INFRA_3_05: 8,
+
+  INFRA_4_01: "Kaspersky Endpoint Security, стоит на всех компьютерах", INFRA_4_02: 3,
+  INFRA_4_03: "no", INFRA_4_04: 55000, INFRA_4_05: 4, INFRA_4_06: 20000,
+
+  INFRA_5_01: "Windows, Microsoft Office, 1С", INFRA_5_02: 45, INFRA_5_03: 135000,
+
+  INFRA_6_01: "Да, копируется база 1С и общие файлы", INFRA_6_02: "Раз в сутки, ночью",
+  INFRA_6_03: "Нет, ни разу не проверяли восстановление", INFRA_6_04: 25000,
+  INFRA_6_05: "yes", INFRA_6_06: 2
+};
+/* ============================================================
+   Retail IT Audit — навигация, обработчики событий, склейка.
+   ============================================================ */
+
+var STEP_META = {
+    intro:   { title: 'Начало', short: 'Начало' },
+    CLI:     { title: 'Профиль клиента', short: 'Клиент' },
+    HD:      { title: 'Служба поддержки', short: 'Поддержка' },
+    C1:      { title: 'Сопровождение 1С', short: '1С' },
+    KKT:     { title: 'Кассы', short: 'Кассы' },
+    MARK:    { title: 'Маркировка', short: 'Маркировка' },
+    INFRA:   { title: 'Компьютеры и сеть', short: 'Сеть' },
+    tariffs: { title: 'Наши тарифы', short: 'Тарифы' },
+    results: { title: 'Результаты', short: 'Итог' }
+};
+
+function stepIndex(step) { return STEP_ORDER.indexOf(step); }
+
+function goToStep(step) {
+    STATE.step = step;
+    saveState();
+    render();
+    window.scrollTo(0, 0);
+}
+
+STATE.skipConfirmed = {};
+
+function currentStepBlocks() {
+    var step = STATE.step;
+    if (step === 'CLI') return blocksForStep('CLI');
+    if (PRODUCT_STEPS.indexOf(step) !== -1) return blocksForStep(step);
+    return [];
+}
+
+function goNext() {
+    var i = stepIndex(STATE.step);
+    if (i >= STEP_ORDER.length - 1) return;
+    var missing = missingRequiredFields(currentStepBlocks());
+    if (missing.length > 0) {
+        if (STATE.step === 'CLI') { showMissingWarning(missing, false); return; }
+        if (!STATE.skipConfirmed[STATE.step]) { showMissingWarning(missing, true); return; }
+    }
+    goToStep(STEP_ORDER[i + 1]);
+}
+
+function showMissingWarning(missing, allowSkip) {
+    var box = document.getElementById('missingWarning');
+    if (!box) return;
+    var list = missing.slice(0, 8).map(function (f) { return '<li>' + escapeHtml(f.label) + '</li>'; }).join('');
+    var more = missing.length > 8 ? '<li>… и ещё ' + (missing.length - 8) + '</li>' : '';
+    box.innerHTML = '<div class="warn-card">' +
+        '<div class="warn-title">Не заполнено ' + missing.length + ' поле(й), нужных для расчёта</div>' +
+        '<ul class="warn-list">' + list + more + '</ul>' +
+        (allowSkip
+            ? '<button class="btn btn-outline" onclick="skipAndContinue()">Всё равно продолжить</button>'
+            : '<div class="warn-hint">Без этих данных ничего не посчитается — сначала заполните профиль клиента.</div>') +
+        '</div>';
+    box.scrollIntoView({ block: 'center' });
+    var firstMissing = document.querySelector('[data-field-wrap="' + missing[0].id + '"] .field-input');
+    if (firstMissing) firstMissing.focus();
+}
+
+function skipAndContinue() {
+    STATE.skipConfirmed[STATE.step] = true;
+    goNext();
+}
+
+function goPrev() {
+    var i = stepIndex(STATE.step);
+    if (i > 0) goToStep(STEP_ORDER[i - 1]);
+}
+
+function renderRail() {
+    var items = STEP_ORDER.filter(function (s) { return s !== 'intro'; }).map(function (s, idx) {
+        var active = s === STATE.step ? ' active' : '';
+        var done = stepIndex(s) < stepIndex(STATE.step) ? ' done' : '';
+        return '<button class="rail-item' + active + done + '" data-goto="' + s + '">' +
+            '<span class="rail-num">' + (idx + 1) + '</span>' +
+            '<span class="rail-name">' + STEP_META[s].short + '</span></button>';
+    }).join('');
+    return '<nav class="rail">' +
+        '<button class="rail-back" onclick="backToLibrary()" title="К списку аудитов">← Список</button>' +
+        items + '</nav>';
+}
+
+function fmtDate(ts) {
+    if (!ts) return '';
+    var d = new Date(ts);
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function renderIntro() {
+    var audits = getIndex().slice().sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    var listHtml = audits.length === 0
+        ? '<div class="audit-empty">Пока нет ни одного сохранённого аудита в этом браузере.</div>'
+        : audits.map(function (a) {
+            var name = a.name ? escapeHtml(a.name) : 'Без названия (черновик)';
+            var pts = a.points ? a.points + ' магазин(ов) · ' : '';
+            return '<div class="audit-item" onclick="openAudit(\'' + a.id + '\')">' +
+                '<div class="audit-item-main">' +
+                '<div class="audit-item-name">' + name + '</div>' +
+                '<div class="audit-item-meta">' + pts + 'изменено ' + fmtDate(a.updatedAt) + '</div>' +
+                '</div>' +
+                '<button class="audit-item-del" title="Удалить" onclick="deleteAudit(\'' + a.id + '\', event)">✕</button>' +
+                '</div>';
+        }).join('');
+
+    return '<div class="intro">' +
+        '<div class="intro-eyebrow">Айти-Консалтинг</div>' +
+        '<h1>Аудит ИТ розничной сети</h1>' +
+        '<p class="lead">Вы приезжаете к клиенту, заполняете несколько простых вопросов по его кассам, компьютерам, 1С и поддержке пользователей — ' +
+        'а дальше инструмент сам считает, сколько клиент сейчас тратит, сколько будет стоить с нами, и какая получится выгода.</p>' +
+        '<div class="intro-columns">' +
+        '<div class="intro-col-new">' +
+        '<div class="intro-col-title">Новый клиент</div>' +
+        '<button class="btn btn-lg" onclick="startNewAudit()">Начать новый аудит</button>' +
+        '<button class="btn btn-outline" onclick="toggleHelp(true)">Как этим пользоваться</button>' +
+        '<p class="muted small"><a href="#" onclick="loadExample(); return false;">Посмотреть на готовом примере</a> — заполнит вымышленный магазин, чтобы сразу увидеть, как выглядит результат.</p>' +
+        '</div>' +
+        '<div class="intro-col-list">' +
+        '<div class="intro-col-title">Сохранённые аудиты (в этом браузере)</div>' +
+        '<div class="audit-list">' + listHtml + '</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+}
+
+var EXAMPLE_AUDIT_ID = 'example-gardenia';
+function loadExample() {
+    if (typeof EXAMPLE_DATA === 'undefined') return;
+    STATE.auditId = EXAMPLE_AUDIT_ID;  // фиксированный id — повторный клик обновит ту же запись, а не создаст дубль
+    STATE.values = {};
+    var k;
+    for (k in EXAMPLE_DATA) { STATE.values[k] = EXAMPLE_DATA[k]; }
+    STATE.step = 'results';
+    saveState();
+    render();
+    window.scrollTo(0, 0);
+}
+
+function render() {
+    var root = document.getElementById('app');
+    var step = STATE.step;
+    var body = '';
+    if (step === 'intro') {
+        body = renderIntro();
+    } else if (step === 'CLI') {
+        body = renderProfileStep();
+    } else if (PRODUCT_STEPS.indexOf(step) !== -1) {
+        body = renderProductStep(step);
+    } else if (step === 'tariffs') {
+        body = renderTariffsStep();
+    } else if (step === 'results') {
+        var r = computeAll(STATE.values, STATE.values);
+        body = renderResultsStep(r);
+    }
+
+    var showRail = step !== 'intro';
+    var i = stepIndex(step);
+    var showsFields = step === 'CLI' || PRODUCT_STEPS.indexOf(step) !== -1;
+    var missingBox = showsFields ? '<div id="missingWarning"></div>' : '';
+    var nav = step === 'intro' ? '' :
+        '<div class="step-nav no-print">' +
+        '<button class="btn btn-outline" onclick="goPrev()"' + (i <= 1 ? ' disabled' : '') + '>Назад</button>' +
+        '<div class="step-progress">' + i + ' из ' + (STEP_ORDER.length - 1) + '</div>' +
+        (step === 'results' ? '' : '<button class="btn" onclick="goNext()">Дальше</button>') +
+        '</div>';
+
+    root.innerHTML =
+        (showRail ? renderRail() : '') +
+        '<main class="content' + (step === 'intro' ? ' content-intro' : '') + '">' + missingBox + body + nav + '</main>';
+}
+
+// ---------- Помощь / инструкция ----------
+// HELP_HTML определён в app-help.js (должен загружаться раньше этого файла)
+
+function toggleHelp(open) {
+    STATE.helpOpen = open === undefined ? !STATE.helpOpen : open;
+    document.getElementById('helpOverlay').classList.toggle('open', STATE.helpOpen);
+}
+
+// ---------- Обработка ввода (делегирование событий) ----------
+function handleFieldChange(e) {
+    var t = e.target;
+    if (!t.hasAttribute('data-field')) return;
+    var id = t.getAttribute('data-field');
+    STATE.values[id] = t.value;
+    STATE.skipConfirmed[STATE.step] = false;
+    var wrap = t.closest('.field');
+    if (wrap) wrap.classList.toggle('field-missing', false);
+    saveState();
+    if (id === 'CLI_0_02' || id === 'CLI_0_15') {
+        var box = document.querySelector('.tier-result');
+        if (box) {
+            var tier = currentTier();
+            box.querySelector('.tier-result-value').textContent = TIER_LABEL[tier];
+            box.querySelector('.tier-result-explain').textContent = tierExplain(tier);
+        }
+    }
+}
+
+document.addEventListener('input', function (e) {
+    if (e.target.matches('input[data-field]')) handleFieldChange(e);
+});
+document.addEventListener('change', function (e) {
+    if (e.target.matches('select[data-field]')) handleFieldChange(e);
+});
+document.addEventListener('click', function (e) {
+    var railBtn = e.target.closest('[data-goto]');
+    if (railBtn) { goToStep(railBtn.getAttribute('data-goto')); return; }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadState();
+    document.getElementById('helpBody').innerHTML = HELP_HTML;
+    render();
+});
+</script>
