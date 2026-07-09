@@ -314,8 +314,14 @@ select.field-input { max-width: 320px; }
 .print-stat { flex: 1; min-width: 150px; background: var(--page); border-radius: var(--radius); padding: 14px 16px; }
 .print-stat-value { font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .print-stat-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+.mechanism-blocks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.mechanism-card { background: var(--page); border-radius: var(--radius); padding: 12px 16px; }
+.mechanism-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: var(--ink); }
+.mechanism-row { font-size: 13.5px; line-height: 1.55; color: var(--ink-secondary); margin: 3px 0; }
+.mechanism-label { font-weight: 700; color: var(--brand); }
+.print-page-break { page-break-before: always; }
 @media print {
-  .print-stat { background: #F2F2F2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-stat, .mechanism-card { background: #F2F2F2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
 /* ---- save indicator / help ---- */
@@ -841,15 +847,29 @@ function computeAll(rawValues, rawCli) {
     result.tier = computeTier(cli.points, rawCli.CLI_0_15);
 
     // Служебный расчёт для панели «маржа» — только по позициям, где известна себестоимость.
+    // Считаем и по каждому продукту отдельно (не только общий итог), иначе при движении ползунка
+    // графики по направлениям не совпадут с общими цифрами наверху — это реальный риск ошибки в отчёте.
     var costTotal = 0, priceOfCostKnownTotal = 0, id3;
+    var marginCostByProduct = {}, marginPriceByProduct = {};
+    for (product in SVC_PRODUCTS) { marginCostByProduct[product] = 0; marginPriceByProduct[product] = 0; }
     for (id3 in COST) {
-        costTotal += COST[id3](v, cli);
-        priceOfCostKnownTotal += result.svc[id3] || 0;
+        var itemCost = COST[id3](v, cli);
+        var itemPrice = result.svc[id3] || 0;
+        costTotal += itemCost;
+        priceOfCostKnownTotal += itemPrice;
+        for (product in SVC_PRODUCTS) {
+            if (SVC_PRODUCTS[product].indexOf(id3) !== -1) {
+                marginCostByProduct[product] += itemCost;
+                marginPriceByProduct[product] += itemPrice;
+            }
+        }
     }
     result.marginCostTotal = costTotal;
     result.marginPriceTotal = priceOfCostKnownTotal;
     result.marginFixedTotal = result.grandSvc - priceOfCostKnownTotal;
     result.marginPct = costTotal > 0 ? (priceOfCostKnownTotal / costTotal - 1) * 100 : 0;
+    result.marginCostByProduct = marginCostByProduct;
+    result.marginPriceByProduct = marginPriceByProduct;
 
     return result;
 }
@@ -859,6 +879,20 @@ function svcAtMarginLevel(result, levelPct) {
     var k = levelPct / 100;
     var scaledPart = result.marginCostTotal + (result.marginPriceTotal - result.marginCostTotal) * k;
     return result.marginFixedTotal + scaledPart;
+}
+
+// То же самое, но по каждому продукту отдельно — чтобы графики по направлениям
+// пересчитывались синхронно с общими цифрами при движении ползунка маржи.
+function svcByProductAtMarginLevel(result, levelPct) {
+    var k = levelPct / 100;
+    var out = {}, product;
+    for (product in result.svcTotal) {
+        var costP = result.marginCostByProduct[product] || 0;
+        var priceP = result.marginPriceByProduct[product] || 0;
+        var fixedP = result.svcTotal[product] - priceP;
+        out[product] = fixedP + costP + (priceP - costP) * k;
+    }
+    return out;
 }
 /* ============================================================
    Retail IT Audit — интерфейс: состояние, отрисовка, диаграммы, экспорт.
@@ -1229,6 +1263,45 @@ function printStat(label, value) {
     return '<div class="print-stat"><div class="print-stat-value">' + value + '</div><div class="print-stat-label">' + escapeHtml(label) + '</div></div>';
 }
 
+function mechanismCard(title, now, then, how) {
+    return '<div class="mechanism-card">' +
+        '<div class="mechanism-title">' + escapeHtml(title) + '</div>' +
+        '<div class="mechanism-row"><span class="mechanism-label">Сейчас:</span> ' + now + '</div>' +
+        '<div class="mechanism-row"><span class="mechanism-label">Станет:</span> ' + then + '</div>' +
+        '<div class="mechanism-row"><span class="mechanism-label">За счёт чего:</span> ' + how + '</div>' +
+        '</div>';
+}
+
+// Раздел печатного отчёта «Показатели — сейчас и с нами»: по каждому из пяти направлений —
+// текущая ситуация (числа берём из ответов конкретного клиента), целевое состояние и механизм,
+// за счёт которого оно достигается (реальная структура нашей услуги, не общие слова).
+function renderMechanismSection(r) {
+    var v = r.v;
+    var html = '<div class="mechanism-blocks">';
+    html += mechanismCard('Служба поддержки пользователей',
+        fmtNum(v.HD_1_01) + ' ' + pluralRu(v.HD_1_01, 'обращение', 'обращения', 'обращений') + ' в месяц без единого зафиксированного срока реакции — каждое решается тем, кто оказался свободен.',
+        'Единая служба поддержки с зафиксированным сроком реакции на каждое обращение, независимо от того, кто из сотрудников сейчас занят.',
+        'Выделенная команда 1-й линии на тарифе за обращение — без содержания своего штата и без риска "заболел единственный айтишник".');
+    html += mechanismCard('Сопровождение 1С',
+        fmtNum(v.C1_6_01) + ' ' + pluralRu(v.C1_6_01, 'сложный вопрос', 'сложных вопроса', 'сложных вопросов') + ' по 1С в месяц (настройки, методология) сейчас перемешаны с рутинными операциями одного и того же человека.',
+        'Рутинные операции — на фиксированном тарифе с понятными сроками. Сложные методологические вопросы — отдельная услуга, не размывающая сроки по рутине.',
+        'Закреплённый специалист 1С с чётким разделением зон ответственности между сопровождением и разработкой/методологией.');
+    html += mechanismCard('Кассы и оборудование',
+        fmtNum(v.KKT_1_01) + ' ' + pluralRu(v.KKT_1_01, 'касса', 'кассы', 'касс') + ' на обслуживании, ремонт занимает в среднем ' + fmtNum(v.KKT_5_02) + ' ч — по факту поломки, без планового контроля состояния.',
+        'Плановая профилактика вместо реакции по факту поломки — меньше внеплановых простоев и потерянных продаж.',
+        'Регулярное обслуживание и мониторинг передачи фискальных данных в налоговую по фиксированному тарифу за кассу.');
+    html += mechanismCard('Маркировка товаров',
+        fmtNum(v.MARK_3_01) + ' ' + pluralRu(v.MARK_3_01, 'случай', 'случая', 'случаев') + ' ошибок маркировки в месяц — каждый такой случай это риск штрафа от контролирующих органов.',
+        'Контроль корректности документооборота с оператором ЭДО — риск штрафов снижается, а не остаётся непроверенным.',
+        'Постоянный мониторинг обмена документами и оперативное устранение сбоев.');
+    html += mechanismCard('Компьютеры и сеть',
+        fmtNum(v.INFRA_4_02) + ' ' + pluralRu(v.INFRA_4_02, 'заражение или атака', 'заражения или атаки', 'заражений или атак') + ' за год, при этом резервные копии и защита проверяются нерегулярно или вообще не проверяются.',
+        'Проверенные резервные копии, антивирус под контролем на всех рабочих местах, плановая профилактика сервера.',
+        'Регулярное администрирование сервера и рабочих мест по фиксированному тарифу вместо реакции по факту сбоя.');
+    html += '</div>';
+    return html;
+}
+
 function renderPrintReport(r, audienceKey) {
     var cliName = STATE.values.CLI_0_01 || 'клиент';
     var persona = PRINT_PERSONAS[audienceKey];
@@ -1238,7 +1311,9 @@ function renderPrintReport(r, audienceKey) {
     html += '<h1>' + persona.reportTitle + '</h1>';
     html += '<h2 class="print-section-title">Что мы проанализировали</h2>';
     html += methodologySummary(r, cliName);
-    html += '<h2 class="print-section-title">' + persona.title + '</h2>';
+    html += '<h2 class="print-section-title">Показатели — сейчас и с нами</h2>';
+    html += renderMechanismSection(r);
+    html += '<h2 class="print-section-title print-page-break">' + persona.title + '</h2>';
     html += persona.narrative(r, cliName);
     html += '<h2 class="print-section-title">Итоговые цифры</h2>';
     html += '<div class="print-stat-row">' +
@@ -1298,10 +1373,10 @@ function renderResultsStep(r) {
         '</div>';
 
     html += '<h3 class="section-title">Экономия по каждому направлению, в месяц</h3>';
-    html += barChart(r.savingsByProduct);
+    html += '<div id="barChartWrap">' + barChart(r.savingsByProduct) + '</div>';
 
     html += '<h3 class="section-title">Сколько стоит сейчас и сколько будет стоить у нас</h3>';
-    html += compareChart(r.tcoTotal, r.svcTotal);
+    html += '<div id="compareChartWrap">' + compareChart(r.tcoTotal, r.svcTotal) + '</div>';
 
     html += '<div class="bottom-check">' +
         '<h3 class="section-title">Сверка по зарплатам — проверка, что расчёт не ошибся</h3>' +
@@ -1763,6 +1838,18 @@ function onMarginSliderChange(levelPct) {
         levelPct == 0 ? 'Наценка: 0% (в ноль, только себестоимость)' :
         'Наценка: ' + Math.round(r.marginPct * levelPct / 100) + '%';
     document.getElementById('marginSliderLabel').textContent = label;
+
+    // Графики по направлениям пересчитываются на том же уровне маржи — иначе они разойдутся
+    // с цифрами наверху, и это реальный риск ошибки при подготовке отчёта клиенту.
+    var adjustedSvcByProduct = svcByProductAtMarginLevel(r, levelPct);
+    var adjustedSavingsByProduct = {}, product;
+    for (product in r.tcoTotal) {
+        adjustedSavingsByProduct[product] = r.tcoTotal[product] - (adjustedSvcByProduct[product] || 0);
+    }
+    var barWrap = document.getElementById('barChartWrap');
+    if (barWrap) barWrap.innerHTML = barChart(adjustedSavingsByProduct);
+    var compareWrap = document.getElementById('compareChartWrap');
+    if (compareWrap) compareWrap.innerHTML = compareChart(r.tcoTotal, adjustedSvcByProduct);
 }
 
 // ---------- Печать отчёта под конкретного получателя ----------
