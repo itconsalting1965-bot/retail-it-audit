@@ -219,12 +219,12 @@ select.field-input { max-width: 320px; }
 .warn-hint { font-size: 13px; color: var(--ink-secondary); }
 
 .margin-panel {
-  background: var(--page); border: 1px dashed var(--ink-muted); border-radius: var(--radius);
+  background: var(--brand-tint); border: 2px dashed var(--brand); border-radius: var(--radius);
   padding: 16px 18px; margin: 20px 0;
 }
 .margin-panel-title {
   font-weight: 700; font-size: 12.5px; letter-spacing: 0.02em; text-transform: uppercase;
-  color: var(--ink-muted); margin-bottom: 8px;
+  color: var(--brand); margin-bottom: 8px;
 }
 .margin-slider-row { display: flex; align-items: center; gap: 14px; margin: 10px 0 4px; }
 .margin-slider-row input[type="range"] { flex: 1; accent-color: var(--brand); }
@@ -1157,6 +1157,26 @@ function renderResultsStep(r) {
         'Если эти цифры оценочные (клиент не смог назвать точно) — весь расчёт настолько же оценочный, и стоит это проговорить, показывая отчёт. Поменять цифры можно на шаге "Профиль клиента".' +
         '</div>';
 
+    html += '<div class="margin-panel no-print">' +
+        '<div class="margin-panel-title">Служебное — только для нас, клиенту не показывать</div>' +
+        (r.marginCostTotal > 0 ?
+            '<p class="muted small">Ниже — часть нашей цены, где известна себестоимость (обращения, кассы, обмены, администрирование сервера). ' +
+            'Ползунок показывает диапазон от нуля (работаем в ноль, только себестоимость) до текущей заложенной наценки. ' +
+            'Если экономия клиента при текущей наценке выглядит слабо — подвиньте ползунок влево и посмотрите, при какой наценке предложение станет убедительным.</p>' +
+            '<div class="margin-slider-row">' +
+            '<input type="range" id="marginSlider" min="0" max="100" step="5" value="100" oninput="onMarginSliderChange(this.value)">' +
+            '<span id="marginSliderLabel">Наценка: ' + Math.round(r.marginPct) + '% (текущая)</span>' +
+            '</div>' +
+            '<div class="tiles">' +
+            statTile('Цена при этой наценке', '<span id="marginPreviewSvc">' + fmtMoney(r.grandSvc) + '</span>', 'в месяц', 'accent') +
+            statTile('Экономия клиента при этой наценке', '<span id="marginPreviewSavings">' + fmtMoney(r.savingsTotal) + '</span>', 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad') +
+            statTile('Насколько выгодно клиенту', '<span id="marginPreviewRoi">' + fmtPercent(r.roi) + '</span>', '', r.roi >= 0 ? 'good' : 'bad') +
+            '</div>'
+        :
+            '<p class="muted small">Пока не по чему считать — ползунок появится, как только будут заполнены обращения, кассы, обмены или сервер (позиции, где известна себестоимость).</p>'
+        ) +
+        '</div>';
+
     html += '<h3 class="section-title">Экономия по каждому направлению, в месяц</h3>';
     html += barChart(r.savingsByProduct);
 
@@ -1170,24 +1190,6 @@ function renderResultsStep(r) {
         statTile('Служба поддержки, по зарплатам', fmtMoney(r.bottomHD), 'в месяц', null) +
         statTile('Сопровождение 1С, по зарплатам', fmtMoney(r.bottomC1), 'в месяц', null) +
         '</div></div>';
-
-    if (r.marginCostTotal > 0) {
-        html += '<div class="margin-panel no-print">' +
-            '<div class="margin-panel-title">Служебное — только для нас, клиенту не показывать</div>' +
-            '<p class="muted small">Ниже — часть нашей цены, где известна себестоимость (обращения, кассы, обмены, администрирование сервера). ' +
-            'Ползунок показывает диапазон от нуля (работаем в ноль, только себестоимость) до текущей заложенной наценки. ' +
-            'Если экономия клиента при текущей наценке выглядит слабо — подвиньте ползунок влево и посмотрите, при какой наценке предложение станет убедительным.</p>' +
-            '<div class="margin-slider-row">' +
-            '<input type="range" id="marginSlider" min="0" max="100" step="5" value="100" oninput="onMarginSliderChange(this.value)">' +
-            '<span id="marginSliderLabel">Наценка: ' + Math.round(r.marginPct) + '% (текущая)</span>' +
-            '</div>' +
-            '<div class="tiles">' +
-            statTile('Цена при этой наценке', '<span id="marginPreviewSvc">' + fmtMoney(r.grandSvc) + '</span>', 'в месяц', 'accent') +
-            statTile('Экономия клиента при этой наценке', '<span id="marginPreviewSavings">' + fmtMoney(r.savingsTotal) + '</span>', 'в месяц', r.savingsTotal >= 0 ? 'good' : 'bad') +
-            statTile('Насколько выгодно клиенту', '<span id="marginPreviewRoi">' + fmtPercent(r.roi) + '</span>', '', r.roi >= 0 ? 'good' : 'bad') +
-            '</div>' +
-            '</div>';
-    }
 
     html += '<h3 class="section-title">Отчёт для клиента</h3>';
     html += '<p class="lead">Ниже — заготовка отчёта под каждого получателя. При показе клиенту оставьте только тот раздел, который относится к тому, кто будет читать отчёт (это указано в профиле клиента).</p>';
