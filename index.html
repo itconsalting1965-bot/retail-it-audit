@@ -243,6 +243,12 @@ select.field-input { max-width: 320px; }
 .btn-sm { font-size: 12.5px; padding: 7px 14px; }
 .intro-offline { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .intro-offline-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--ink-muted); }
+.intro-offline-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.print-form-block { margin: 18px 0; break-inside: avoid; }
+.print-form-block-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.print-form-field { font-size: 13.5px; padding: 6px 0; border-bottom: 1px dotted var(--gridline); }
+.print-form-opts { color: var(--ink-muted); font-size: 12px; }
+.print-form-line { color: var(--ink-muted); margin-top: 6px; }
 .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .step-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); }
 .step-progress { color: var(--ink-muted); font-size: 13px; }
@@ -379,7 +385,7 @@ select.field-input { max-width: 320px; }
 <div id="saveIndicator"></div>
 
 <div id="app"></div>
-<input type="file" id="formFileInput" accept=".txt,text/plain" style="display:none" onchange="handleFormFileUpload(event)">
+<input type="file" id="formFileInput" accept=".txt,.csv,text/plain,text/csv" style="display:none" onchange="handleFormFileUpload(event)">
 
 <div id="helpOverlay" onclick="if(event.target===this) toggleHelp(false)">
   <div class="help-panel">
@@ -1526,6 +1532,17 @@ function exportJson() {
 // и загрузить обратно на стартовом экране — приложение разберёт файл и создаст новый аудит.
 var FORM_PRODUCT_ORDER = ['CLI', 'HD', 'C1', 'KKT', 'MARK', 'INFRA'];
 
+// Общая подсказка формата ответа для не-числовых/не-текстовых полей — используется
+// и в текстовой форме, и в CSV, и в печатной версии, чтобы не дублировать логику.
+function fieldOptionsSuffix(f) {
+    if (f.type === 'D') return 'да / нет';
+    if (f.type === 'P') return 'число, %';
+    if (f.type === 'SELECT' && f.options) {
+        return 'варианты: ' + f.options.filter(function (o) { return o[0]; }).map(function (o) { return o[1]; }).join(' / ');
+    }
+    return '';
+}
+
 function generateFormText() {
     var lines = [];
     lines.push('ИТ-АУДИТ РОЗНИЧНОЙ СЕТИ — форма для заполнения');
@@ -1548,12 +1565,8 @@ function generateFormText() {
             lines.push('');
             b.fields.forEach(function (f) {
                 var star = f.required ? ' *' : '';
-                var opts = '';
-                if (f.type === 'D') opts = ' (да / нет)';
-                else if (f.type === 'P') opts = ' (число, %)';
-                else if (f.type === 'SELECT' && f.options) {
-                    opts = ' (варианты: ' + f.options.filter(function (o) { return o[0]; }).map(function (o) { return o[1]; }).join(' / ') + ')';
-                }
+                var suffix = fieldOptionsSuffix(f);
+                var opts = suffix ? ' (' + suffix + ')' : '';
                 lines.push(f.id + star + ' | ' + f.label + opts);
                 if (f.hint) lines.push('(' + f.hint + ')');
                 lines.push('Ответ: ');
@@ -1573,6 +1586,97 @@ function downloadForm() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+}
+
+// ---- CSV (открывается в Excel) — та же форма, но таблицей: ID / блок / вопрос / обязательное / ответ ----
+function csvEscape(s) {
+    s = s === undefined || s === null ? '' : String(s);
+    if (/[";\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+}
+
+function generateFormCsv() {
+    var rows = [['ID', 'Блок', 'Вопрос', 'Обязательное', 'Ответ']];
+    FORM_PRODUCT_ORDER.forEach(function (p) {
+        var meta = PRODUCT_META[p];
+        BLOCKS.filter(function (b) { return b.product === p; }).forEach(function (b) {
+            b.fields.forEach(function (f) {
+                var suffix = fieldOptionsSuffix(f);
+                var question = f.label + (suffix ? ' (' + suffix + ')' : '') + (f.hint ? ' — ' + f.hint : '');
+                rows.push([f.id, (meta.name || p) + ' — ' + b.title, question, f.required ? 'да' : '', '']);
+            });
+        });
+    });
+    return rows.map(function (r) { return r.map(csvEscape).join(';'); }).join('\r\n');
+}
+
+function downloadFormCsv() {
+    var csv = generateFormCsv();
+    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'forma-audita-itconsulting.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function parseCsvLine(line) {
+    var result = [], cur = '', inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+        var c = line.charAt(i);
+        if (inQuotes) {
+            if (c === '"') {
+                if (line.charAt(i + 1) === '"') { cur += '"'; i++; }
+                else inQuotes = false;
+            } else cur += c;
+        } else {
+            if (c === '"') inQuotes = true;
+            else if (c === ';') { result.push(cur); cur = ''; }
+            else cur += c;
+        }
+    }
+    result.push(cur);
+    return result;
+}
+
+// Разбирает CSV, скачанный через downloadFormCsv и заполненный в Excel, обратно в { id: "ответ" }.
+// Колонка с ответом — последняя (5-я): ID;Блок;Вопрос;Обязательное;Ответ.
+function parseFormCsv(text) {
+    var values = {};
+    var lines = String(text).replace(/^﻿/, '').split(/\r?\n/).filter(function (l) { return l.length > 0; });
+    for (var i = 1; i < lines.length; i++) {
+        var cols = parseCsvLine(lines[i]);
+        var id = cols[0], answer = cols[4];
+        if (id && answer !== undefined && answer.replace(/\s+/g, '') !== '') values[id] = answer.trim();
+    }
+    return values;
+}
+
+// ---- Печатная версия формы (PDF через "Печать" браузера) — то же содержимое, но для бумаги ----
+function renderPrintForm() {
+    var html = '<div class="print-report">';
+    html += '<div class="print-report-header">' + LOGO_SVG +
+        '<div class="print-report-meta">ИТ-аудит розничной сети<br>Форма для заполнения · ' + fmtDate(Date.now()) + '</div></div>';
+    html += '<h1>Форма для заполнения</h1>';
+    html += '<p>Поля со звёздочкой (*) нужны для расчёта, остальные можно оставить пустыми.</p>';
+    FORM_PRODUCT_ORDER.forEach(function (p) {
+        var meta = PRODUCT_META[p];
+        html += '<h2 class="print-section-title print-page-break">' + escapeHtml(meta.name || p) + '</h2>';
+        BLOCKS.filter(function (b) { return b.product === p; }).forEach(function (b) {
+            html += '<div class="print-form-block"><div class="print-form-block-title">' + escapeHtml(b.title) + '</div>';
+            b.fields.forEach(function (f) {
+                var suffix = fieldOptionsSuffix(f);
+                var star = f.required ? '<span class="field-required">*</span> ' : '';
+                var opts = suffix ? ' <span class="print-form-opts">(' + escapeHtml(suffix) + ')</span>' : '';
+                html += '<div class="print-form-field">' + star + escapeHtml(f.label) + opts +
+                    '<div class="print-form-line">Ответ: </div></div>';
+            });
+            html += '</div>';
+        });
+    });
+    html += '</div>';
+    return html;
 }
 
 // Разбирает текст формы обратно в { id: "текстовый ответ" }.
@@ -1896,9 +2000,13 @@ function renderIntro() {
         '<p class="muted small"><button class="link-btn" onclick="loadExample()">Посмотреть на готовом примере</button> — заполнит вымышленный магазин, чтобы сразу увидеть, как выглядит результат.</p>' +
         '<div class="intro-offline">' +
         '<div class="intro-offline-title">Если нет ноутбука под рукой</div>' +
-        '<button class="btn btn-outline btn-sm" onclick="downloadForm()">Скачать форму с вопросами</button>' +
+        '<div class="intro-offline-row">' +
+        '<button class="btn btn-outline btn-sm" onclick="downloadForm()">Скачать форму (текст)</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="downloadFormCsv()">Скачать таблицей (Excel/CSV)</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="printForm()">Распечатать / сохранить как PDF</button>' +
+        '</div>' +
         '<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'formFileInput\').click()">Загрузить заполненную форму</button>' +
-        '<p class="muted small">Скачайте, заполните на бумаге или в блокноте, а потом загрузите обратно — ответы подставятся сами.</p>' +
+        '<p class="muted small">Скачайте в любом формате, заполните на бумаге, в блокноте или в Excel, а потом загрузите текстовый файл или таблицу обратно — ответы подставятся сами.</p>' +
         '</div>' +
         '</div>' +
         '<div class="intro-col-list">' +
@@ -1922,24 +2030,26 @@ function loadExample() {
     window.scrollTo(0, 0);
 }
 
-// Загрузка формы, заполненной офлайн (см. downloadForm/parseFormText в app-ui.js) —
+// Загрузка формы, заполненной офлайн (текст из downloadForm или CSV/Excel из downloadFormCsv) —
 // создаёт новый аудит из содержимого файла, дальше можно доправить прямо в приложении.
 function handleFormFileUpload(e) {
     var file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
+    var isCsv = /\.csv$/i.test(file.name);
     var reader = new FileReader();
     reader.onload = function (evt) {
         var raw, values;
         try {
-            raw = parseFormText(String(evt.target.result));
+            var text = String(evt.target.result);
+            raw = isCsv ? parseFormCsv(text) : parseFormText(text);
             values = normalizeImportedValues(raw);
         } catch (err) {
-            alert('Не удалось прочитать файл. Проверьте, что это тот же файл, который скачали из приложения, и структура строк не нарушена.');
+            alert('Не удалось прочитать файл. Проверьте, что это тот же файл, который скачали из приложения, и структура не нарушена.');
             return;
         }
         if (Object.keys(values).length === 0) {
-            alert('В файле не нашлось ни одного заполненного ответа. Проверьте, что после "Ответ:" вписан текст, и файл сохранён как обычный текст (.txt).');
+            alert('В файле не нашлось ни одного заполненного ответа. Проверьте, что колонка/строка "Ответ" заполнена, и файл сохранён в исходном формате.');
             return;
         }
         STATE.auditId = genId();
@@ -1950,6 +2060,16 @@ function handleFormFileUpload(e) {
         window.scrollTo(0, 0);
     };
     reader.readAsText(file, 'UTF-8');
+}
+
+// Печатная версия формы вопросов (см. renderPrintForm в app-ui.js) — тот же приём,
+// что и печать итогового отчёта: подменяем содержимое, печатаем, возвращаем как было.
+function printForm() {
+    var root = document.getElementById('app');
+    var original = root.innerHTML;
+    root.innerHTML = renderPrintForm();
+    window.print();
+    root.innerHTML = original;
 }
 
 function render() {
