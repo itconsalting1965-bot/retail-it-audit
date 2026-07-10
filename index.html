@@ -1595,15 +1595,17 @@ function csvEscape(s) {
     return s;
 }
 
+// Порядок колонок сделан так, чтобы "Ответ" было сразу видно и удобно заполнять, не листая
+// вправо, — а "ID" (нужен только для обратной загрузки, человеку он не важен) убран в самый конец.
 function generateFormCsv() {
-    var rows = [['ID', 'Блок', 'Вопрос', 'Обязательное', 'Ответ']];
+    var rows = [['Блок', 'Вопрос', 'Пояснение', 'Обязательное', 'Ответ', 'ID']];
     FORM_PRODUCT_ORDER.forEach(function (p) {
         var meta = PRODUCT_META[p];
         BLOCKS.filter(function (b) { return b.product === p; }).forEach(function (b) {
             b.fields.forEach(function (f) {
                 var suffix = fieldOptionsSuffix(f);
-                var question = f.label + (suffix ? ' (' + suffix + ')' : '') + (f.hint ? ' — ' + f.hint : '');
-                rows.push([f.id, (meta.name || p) + ' — ' + b.title, question, f.required ? 'да' : '', '']);
+                var question = f.label + (suffix ? ' (' + suffix + ')' : '');
+                rows.push([(meta.name || p) + ' — ' + b.title, question, f.hint || '', f.required ? 'да' : '', '', f.id]);
             });
         });
     });
@@ -1641,13 +1643,13 @@ function parseCsvLine(line) {
 }
 
 // Разбирает CSV, скачанный через downloadFormCsv и заполненный в Excel, обратно в { id: "ответ" }.
-// Колонка с ответом — последняя (5-я): ID;Блок;Вопрос;Обязательное;Ответ.
+// Колонки: Блок;Вопрос;Пояснение;Обязательное;Ответ;ID — ответ 5-й, id последний (см. generateFormCsv).
 function parseFormCsv(text) {
     var values = {};
     var lines = String(text).replace(/^﻿/, '').split(/\r?\n/).filter(function (l) { return l.length > 0; });
     for (var i = 1; i < lines.length; i++) {
         var cols = parseCsvLine(lines[i]);
-        var id = cols[0], answer = cols[4];
+        var answer = cols[4], id = cols[5];
         if (id && answer !== undefined && answer.replace(/\s+/g, '') !== '') values[id] = answer.trim();
     }
     return values;
