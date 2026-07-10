@@ -468,18 +468,18 @@ var BLOCKS = [
       hint:'если не знаете точно — спросите у бухгалтерии или у самого сотрудника, это обычно проще, чем выяснять "стоимость часа"'},
     {id:'CLI_0_11_SALARY', required:true, label:'Оклад айтишника в месяц, руб.', type:'N',
       hint:'как в трудовом договоре, до вычета налога с зарплаты — мы сами добавим налоги и посчитаем час', showIf:{field:'CLI_0_11_MODE', equals:'salary'}},
-    {id:'CLI_0_11_HOURS', label:'Сколько часов в месяц он реально работает', type:'N',
+    {id:'CLI_0_11_HOURS', label:'Сколько часов в месяц реально работает айтишник', type:'N',
       hint:'если не знаете точно — оставьте пустым, возьмём стандартную норму 160 часов', showIf:{field:'CLI_0_11_MODE', equals:'salary'}},
-    {id:'CLI_0_11_RATE', required:true, label:'Стоимость часа его работы, руб.', type:'N',
+    {id:'CLI_0_11_RATE', required:true, label:'Стоимость часа работы айтишника, руб.', type:'N',
       hint:'то, что уже известно напрямую — по договору или по факту оплаты', showIf:{field:'CLI_0_11_MODE', equals:'hourly'}},
     {id:'CLI_0_12_MODE', required:true, label:'Как клиент платит специалисту по 1С', type:'SELECT',
       options:[['','— выберите —'],['salary','Оклад в месяц'],['hourly','Почасово или по договору']],
       hint:'если это один и тот же человек, что и айтишник — всё равно уточните для этой роли отдельно'},
     {id:'CLI_0_12_SALARY', required:true, label:'Оклад специалиста по 1С в месяц, руб.', type:'N',
       hint:'как в трудовом договоре, до вычета налога с зарплаты', showIf:{field:'CLI_0_12_MODE', equals:'salary'}},
-    {id:'CLI_0_12_HOURS', label:'Сколько часов в месяц он реально работает', type:'N',
+    {id:'CLI_0_12_HOURS', label:'Сколько часов в месяц реально работает специалист по 1С', type:'N',
       hint:'если не знаете точно — оставьте пустым, возьмём стандартную норму 160 часов', showIf:{field:'CLI_0_12_MODE', equals:'salary'}},
-    {id:'CLI_0_12_RATE', required:true, label:'Стоимость часа его работы, руб.', type:'N',
+    {id:'CLI_0_12_RATE', required:true, label:'Стоимость часа работы специалиста по 1С, руб.', type:'N',
       hint:'то, что уже известно напрямую — по договору или по факту оплаты', showIf:{field:'CLI_0_12_MODE', equals:'hourly'}},
     {id:'CLI_0_13', required:true, label:'Сколько часов в сутки работает один магазин', type:'N'},
     {id:'CLI_0_15', label:'Изменить уровень аудита вручную', type:'SELECT', options:[['auto','Не менять (расчёт автоматом)'],['express','Экспресс'],['standard','Стандарт'],['extended','Расширенный']],
@@ -500,7 +500,7 @@ var BLOCKS = [
   ]},
 { id:'HD_2', product:'HD', title:'Пароли и доступы', tier:'must',
   fields:[
-    {id:'HD_2_01', required:true, label:'Сколько заявок на новый доступ или пароль в месяц', type:'N'},
+    {id:'HD_2_01', required:true, label:'Сколько заявок на новый доступ или пароль в месяц', type:'N', hint:'если бывает не каждый месяц — укажите среднее дробным числом, например 0,5 (раз в два месяца)'},
     {id:'HD_2_02', required:true, label:'Сколько минут в среднем уходит на одну такую заявку', type:'N'},
     {id:'HD_2_03', label:'Есть ли чёткое правило, кому что можно (документ)', type:'D'},
     {id:'HD_2_04', label:'Кто разрешает выдать доступ', type:'T', hint:'должность'},
@@ -525,15 +525,15 @@ var BLOCKS = [
     {id:'HD_4_06', required:true, label:'Сколько часов уходит, чтобы быстро показать новому сотруднику основы (без формального обучения)', type:'N'}
   ]},
 { id:'HD_5', product:'HD', title:'Кто сейчас занимается поддержкой', tier:'must', bottom:true,
-  note:'Это отдельная проверка тех же цифр «снизу» — по зарплатам, а не по количеству обращений.',
+  note:'Это отдельная проверка тех же цифр «снизу» — по зарплатам, а не по количеству обращений. Если это те же сотрудники, что уже упоминались в профиле клиента, — впишите тот же оклад ещё раз, это не ошибка и не дублирование: расчёт «сверху» и расчёт «снизу» должны сойтись, чтобы проверить, что данные собраны верно.',
   fields:[
-    {id:'HD_5_01', label:'Сколько человек занимается поддержкой сейчас (в пересчёте на полный день)', type:'N'},
-    {id:'HD_5_02', required:true, label:'Сколько им платят в месяц (оклад), руб.', type:'N', hint:'оклад как в договоре, до вычета налога — налоги добавим сами. Только те, кто НЕ занимается ещё и 1С'},
+    {id:'HD_5_01', label:'Сколько человек занимается только поддержкой сейчас (в пересчёте на полный день)', type:'N', hint:'без учёта совмещённого сотрудника из полей ниже — про него отдельный вопрос'},
+    {id:'HD_5_02', required:true, label:'Сколько платят сотрудникам, которые занимаются ТОЛЬКО поддержкой, — оклад, руб.', type:'N', hint:'оклад как в договоре, до вычета налога — налоги добавим сами. Не считайте того, кто ещё и 1С занимается, — про него отдельно ниже'},
     {id:'HD_5_03', label:'Сколько времени тратят на поддержку другие сотрудники, у кого это не основная работа, %', type:'P'},
-    {id:'HD_5_04', label:'Есть ли сотрудник, который занимается и поддержкой пользователей, и 1С одновременно', type:'D'},
-    {id:'HD_5_05', label:'Как зовут / должность этого сотрудника', type:'T'},
-    {id:'HD_5_06', required:true, label:'Сколько % своего времени он тратит именно на поддержку пользователей (не на 1С)', type:'P', hint:'спросите у руководителя ИТ клиента — не оценивайте сами'},
-    {id:'HD_5_07', required:true, label:'Сколько ему платят в месяц (оклад), руб.', type:'N', hint:'оклад как в договоре, до вычета налога — налоги добавим сами'}
+    {id:'HD_5_04', label:'Есть ли отдельный сотрудник, который совмещает поддержку пользователей и 1С', type:'D'},
+    {id:'HD_5_05', label:'Как зовут / должность этого совмещённого сотрудника', type:'T'},
+    {id:'HD_5_06', required:true, label:'Сколько % времени совмещённый сотрудник тратит именно на поддержку пользователей (не на 1С)', type:'P', hint:'спросите у руководителя ИТ клиента — не оценивайте сами'},
+    {id:'HD_5_07', required:true, label:'Сколько платят совмещённому сотруднику (и поддержка, и 1С) — оклад, руб.', type:'N', hint:'оклад как в договоре, до вычета налога — налоги добавим сами'}
   ]},
 
 // ---------------- ПРОДУКТ 2: СОПРОВОЖДЕНИЕ 1С ----------------
@@ -584,10 +584,10 @@ var BLOCKS = [
     {id:'C1_6_02', required:true, label:'Сколько минут уходит на один такой вопрос', type:'N'}
   ]},
 { id:'C1_7', product:'C1', title:'Кто сейчас занимается 1С', tier:'must', bottom:true,
-  note:'Проверка тех же цифр «снизу» — симметрично блоку поддержки пользователей.',
+  note:'Проверка тех же цифр «снизу» — симметрично блоку поддержки пользователей. Если это тот же сотрудник, что уже упоминался в профиле клиента, — впишите тот же оклад ещё раз, это не дублирование, а сверка расчёта.',
   fields:[
-    {id:'C1_7_01', label:'Сколько человек занимается 1С сейчас', type:'N'},
-    {id:'C1_7_02', required:true, label:'Сколько им платят в месяц (оклад), руб.', type:'N', hint:'оклад как в договоре, до вычета налога — налоги добавим сами. Только те, кто НЕ занимается ещё и обычной поддержкой'}
+    {id:'C1_7_01', label:'Сколько человек занимается только 1С сейчас', type:'N', hint:'без учёта совмещённого сотрудника из блока поддержки — он уже учтён там'},
+    {id:'C1_7_02', required:true, label:'Сколько платят сотрудникам, которые занимаются ТОЛЬКО 1С, — оклад, руб.', type:'N', hint:'оклад как в договоре, до вычета налога — налоги добавим сами. Совмещённого сотрудника (и поддержка, и 1С) сюда не считайте — он уже учтён в блоке поддержки'}
   ]},
 
 // ---------------- ПРОДУКТ 3: КАССЫ ----------------
@@ -694,11 +694,12 @@ var BLOCKS = [
   ]},
 { id:'INFRA_4', product:'INFRA', title:'Защита от вирусов', tier:'must',
   fields:[
-    {id:'INFRA_4_01', label:'Есть ли антивирус', type:'T', hint:'какой, на сколько компьютеров'},
+    {id:'INFRA_4_01', required:true, label:'Есть ли антивирус на компьютерах', type:'D'},
+    {id:'INFRA_4_01B', label:'Какой антивирус, на сколько компьютеров', type:'T', showIf:{field:'INFRA_4_01', equals:'yes'}},
+    {id:'INFRA_4_04', required:true, label:'Сколько платят за антивирус в год, руб.', type:'N', hint:'смотрите в счёте или договоре, если не помнят точно', showIf:{field:'INFRA_4_01', equals:'yes'}},
     {id:'INFRA_4_02', required:true, label:'Сколько было заражений или атак за год', type:'N'},
-    {id:'INFRA_4_03', label:'Есть ли правило про надёжные пароли', type:'D'},
-    {id:'INFRA_4_04', required:true, label:'Сколько платят за антивирус в год, руб.', type:'N', hint:'смотрите в счёте или договоре, если не помнят точно'},
     {id:'INFRA_4_05', required:true, label:'Сколько часов уходит на устранение одного заражения', type:'N'},
+    {id:'INFRA_4_03', label:'Есть ли правило про надёжные пароли', type:'D'},
     {id:'INFRA_4_06', label:'Был ли ущерб от заражений за год, руб.', type:'N', hint:'если точную сумму не назовут — оставьте пустым, это необязательно'}
   ]},
 { id:'INFRA_5', product:'INFRA', title:'Лицензии на программы', tier:'optional',
@@ -1128,7 +1129,7 @@ function renderField(f) {
     if (f.type === 'N' || f.type === 'P') {
         var v2 = (val === undefined || val === null) ? '' : val;
         var suffix = f.type === 'P' ? '<span class="field-suffix">%</span>' : '';
-        input = '<div class="field-input-wrap"><input class="field-input" type="number" inputmode="decimal" ' +
+        input = '<div class="field-input-wrap"><input class="field-input" type="number" inputmode="decimal" min="0" ' +
             'data-field="' + f.id + '" value="' + escapeAttr(v2) + '" placeholder="0">' + suffix + '</div>';
     } else if (f.type === 'D') {
         var y = val === 'yes' ? ' selected' : '';
@@ -1169,7 +1170,7 @@ function renderBlock(block) {
     var extraFields = block.fields.filter(function (f) { return !f.required && fieldVisible(f); });
     var coreHtml = coreFields.map(renderField).join('');
     var extraHtml = extraFields.length
-        ? '<details class="extra-fields"><summary>Ещё ' + extraFields.length + ' ' + pluralRu(extraFields.length, 'необязательный вопрос', 'необязательных вопроса', 'необязательных вопросов') + ' для контекста</summary>' +
+        ? '<details class="extra-fields" data-extra-for="' + block.id + '"><summary>Ещё ' + extraFields.length + ' ' + pluralRu(extraFields.length, 'необязательный вопрос', 'необязательных вопроса', 'необязательных вопросов') + ' для контекста</summary>' +
           extraFields.map(renderField).join('') + '</details>'
         : '';
     return '<details class="block-card" data-block="' + block.id + '"' + (collapsed ? '' : ' open') + '>' +
@@ -1870,7 +1871,7 @@ var EXAMPLE_DATA = {
   INFRA_3_01: 1, INFRA_3_02: "Да, файловое хранилище на 4 ТБ",
   INFRA_3_03: "Серверу 5 лет, замена не планируется", INFRA_3_04: 2, INFRA_3_05: 8,
 
-  INFRA_4_01: "Kaspersky Endpoint Security, стоит на всех компьютерах", INFRA_4_02: 3,
+  INFRA_4_01: "yes", INFRA_4_01B: "Kaspersky Endpoint Security, стоит на всех компьютерах", INFRA_4_02: 3,
   INFRA_4_03: "no", INFRA_4_04: 55000, INFRA_4_05: 4, INFRA_4_06: 20000,
 
   INFRA_5_01: "Windows, Microsoft Office, 1С", INFRA_5_02: 45, INFRA_5_03: 135000,
@@ -2213,12 +2214,31 @@ function handleFieldChange(e) {
     var t = e.target;
     if (!t.hasAttribute('data-field')) return;
     var id = t.getAttribute('data-field');
+    // Числа вроде "часов на ремонт" или "штрафов" не бывают отрицательными — на всякий случай
+    // подчищаем и в JS, а не только через min="0" в разметке (не все браузеры блокируют ввод "-").
+    if (t.type === 'number' && t.value !== '' && Number(t.value) < 0) { t.value = 0; }
     STATE.values[id] = t.value;
     STATE.skipConfirmed[STATE.step] = false;
     saveState();
     // Select-поля могут открывать/закрывать другие вопросы (showIf, например "оклад" ↔ "почасово") —
-    // курсора там нет, поэтому безопасно и нужно перерисовать шаг целиком, а не точечно.
-    if (t.tagName === 'SELECT') { render(); return; }
+    // курсора там нет, поэтому безопасно и нужно перерисовать шаг целиком, а не точечно. Но раскрытые
+    // блоки/доп. вопросы при этом не должны схлопываться — пользователь мог их только что открыть и
+    // ввести туда данные, а вслепую сброшенное состояние выглядит как будто ответы потерялись.
+    if (t.tagName === 'SELECT') {
+        var openBlocks = [], openExtras = [];
+        document.querySelectorAll('.block-card[open]').forEach(function (el) { openBlocks.push(el.getAttribute('data-block')); });
+        document.querySelectorAll('.extra-fields[open]').forEach(function (el) { openExtras.push(el.getAttribute('data-extra-for')); });
+        render();
+        openBlocks.forEach(function (id2) {
+            var el = document.querySelector('.block-card[data-block="' + id2 + '"]');
+            if (el) el.setAttribute('open', '');
+        });
+        openExtras.forEach(function (id2) {
+            var el = document.querySelector('.extra-fields[data-extra-for="' + id2 + '"]');
+            if (el) el.setAttribute('open', '');
+        });
+        return;
+    }
     var wrap = t.closest('.field');
     if (wrap) wrap.classList.toggle('field-missing', false);
     var pbadge = document.querySelector('.progress-badge');
