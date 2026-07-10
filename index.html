@@ -170,6 +170,7 @@ details[open] > .block-summary::before { transform: rotate(90deg); }
 .badge-optional { background: var(--gridline); color: var(--ink-muted); }
 .block-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); }
 .block-note { color: var(--ink-secondary); font-size: 13px; padding: 10px 0 4px; }
+.tier-guidance { color: var(--brand); font-size: 12.5px; font-weight: 600; padding: 10px 0 0; }
 
 .field { display: block; padding: 10px 0; border-bottom: 1px dashed var(--gridline); border-left: 3px solid transparent; transition: border-color .15s, background .15s; }
 .field:last-child { border-bottom: none; }
@@ -1156,6 +1157,7 @@ var TIER_BADGE = {
 function renderBlock(block) {
     var badge = TIER_BADGE[block.tier] || TIER_BADGE.must;
     var collapsed = isBlockCollapsedByDefault(block);
+    var tierGuidance = block.tierNote ? '<div class="tier-guidance">' + escapeHtml(block.tierNote) + '</div>' : '';
     var note = block.note ? '<div class="block-note">' + escapeHtml(block.note) + '</div>' : '';
     var coreFields = block.fields.filter(function (f) { return !!f.required; });
     var extraFields = block.fields.filter(function (f) { return !f.required && fieldVisible(f); });
@@ -1169,7 +1171,7 @@ function renderBlock(block) {
             '<span class="block-title">' + escapeHtml(block.title) + '</span>' +
             '<span class="badge ' + badge.cls + '">' + badge.text + '</span>' +
         '</summary>' +
-        '<div class="block-body">' + note + coreHtml + extraHtml + '</div>' +
+        '<div class="block-body">' + tierGuidance + note + coreHtml + extraHtml + '</div>' +
         '</details>';
 }
 
